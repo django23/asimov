@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Support glob patterns in sentinel definitions, enabling wildcards like `*.xcodeproj` ([stevegrunwell/asimov#64], props @mdab121)
 * Exclude Xcode DerivedData when `*.xcodeproj` is present ([stevegrunwell/asimov#64], props @mdab121)
 * Exclude well-known global cache directories (`~/.cache`, `~/.gradle/caches`, `~/.m2/repository`, `~/.npm/_cacache`, `~/.nuget/packages`, `~/.kube/cache`, etc.) without requiring sentinel files (inspired by [stevegrunwell/asimov#69], props @pkuczynski)
+* Display a summary of total count and size of newly excluded directories at the end of each run (inspired by [stevegrunwell/asimov#84], props @Vadorequest)
 * Exclude Next.js build cache (`.next`)
 * Exclude Nuxt build cache (`.nuxt`)
 * Exclude Angular CLI cache (`.angular`)
@@ -104,32 +105,30 @@ Initial public release.
 
 
 [Unreleased]: https://github.com/stevegrunwell/asimov/compare/master...develop
-[Version 0.1.0]: https://github.com/stevegrunwell/asimov/releases/tag/v0.1.0
-[Version 0.2.0]: https://github.com/stevegrunwell/asimov/releases/tag/v0.2.0
-[Version 0.3.0]: https://github.com/stevegrunwell/asimov/releases/tag/v0.3.0
-[#5]: https://github.com/stevegrunwell/asimov/issues/5
-[#7]: https://github.com/stevegrunwell/asimov/issues/7
-[#10]: https://github.com/stevegrunwell/asimov/issues/10
-[#15]: https://github.com/stevegrunwell/asimov/pull/15
-[#16]: https://github.com/stevegrunwell/asimov/pull/16
-[#17]: https://github.com/stevegrunwell/asimov/pull/17
-[#18]: https://github.com/stevegrunwell/asimov/pull/18
-[#20]: https://github.com/stevegrunwell/asimov/pull/20
-[#22]: https://github.com/stevegrunwell/asimov/pull/22
-[#30]: https://github.com/stevegrunwell/asimov/pull/30
-[#31]: https://github.com/stevegrunwell/asimov/pull/31
-[#32]: https://github.com/stevegrunwell/asimov/pull/32
-[#33]: https://github.com/stevegrunwell/asimov/pull/33
-[#34]: https://github.com/stevegrunwell/asimov/pull/34
-[#36]: https://github.com/stevegrunwell/asimov/pull/36
-[#37]: https://github.com/stevegrunwell/asimov/pull/37
-[#43]: https://github.com/stevegrunwell/asimov/pull/43
-[#52]: https://github.com/stevegrunwell/asimov/pull/52
-[#55]: https://github.com/stevegrunwell/asimov/pull/55
-[#35]: https://github.com/stevegrunwell/asimov/pull/35
-[#56]: https://github.com/stevegrunwell/asimov/pull/56
+[stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10
+[stevegrunwell/asimov#15]: https://github.com/stevegrunwell/asimov/pull/15
+[stevegrunwell/asimov#16]: https://github.com/stevegrunwell/asimov/pull/16
+[stevegrunwell/asimov#17]: https://github.com/stevegrunwell/asimov/pull/17
+[stevegrunwell/asimov#18]: https://github.com/stevegrunwell/asimov/pull/18
+[stevegrunwell/asimov#20]: https://github.com/stevegrunwell/asimov/pull/20
+[stevegrunwell/asimov#22]: https://github.com/stevegrunwell/asimov/pull/22
+[stevegrunwell/asimov#30]: https://github.com/stevegrunwell/asimov/pull/30
+[stevegrunwell/asimov#31]: https://github.com/stevegrunwell/asimov/pull/31
+[stevegrunwell/asimov#32]: https://github.com/stevegrunwell/asimov/pull/32
+[stevegrunwell/asimov#33]: https://github.com/stevegrunwell/asimov/pull/33
+[stevegrunwell/asimov#34]: https://github.com/stevegrunwell/asimov/pull/34
+[stevegrunwell/asimov#36]: https://github.com/stevegrunwell/asimov/pull/36
+[stevegrunwell/asimov#37]: https://github.com/stevegrunwell/asimov/pull/37
+[stevegrunwell/asimov#43]: https://github.com/stevegrunwell/asimov/pull/43
+[stevegrunwell/asimov#52]: https://github.com/stevegrunwell/asimov/pull/52
+[stevegrunwell/asimov#55]: https://github.com/stevegrunwell/asimov/pull/55
+[stevegrunwell/asimov#35]: https://github.com/stevegrunwell/asimov/pull/35
+[stevegrunwell/asimov#56]: https://github.com/stevegrunwell/asimov/pull/56
 [stevegrunwell/asimov#64]: https://github.com/stevegrunwell/asimov/pull/64
 [stevegrunwell/asimov#69]: https://github.com/stevegrunwell/asimov/pull/69
-[stevegrunwell/asimov#72]: https://github.com/stevegrunwell/asimov/issues/72
 [stevegrunwell/asimov#87]: https://github.com/stevegrunwell/asimov/pull/87
 [stevegrunwell/asimov#97]: https://github.com/stevegrunwell/asimov/pull/97
+[stevegrunwell/asimov#5]: https://github.com/stevegrunwell/asimov/issues/5
+[stevegrunwell/asimov#7]: https://github.com/stevegrunwell/asimov/issues/7
+[stevegrunwell/asimov#72]: https://github.com/stevegrunwell/asimov/issues/72
+[stevegrunwell/asimov#84]: https://github.com/stevegrunwell/asimov/issues/84
