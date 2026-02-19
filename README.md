@@ -99,6 +99,8 @@ Asimov is a thin wrapper around Apple's [`tmutil`](https://ss64.com/mac/tmutil.h
 
 > **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
 
+> **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
+
 ### Inspecting exclusions
 
 List everything excluded from Time Machine:
