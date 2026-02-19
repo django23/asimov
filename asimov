@@ -21,7 +21,19 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 # @author  Steve Grunwell
 # @license MIT
 
-readonly ASIMOV_ROOT=~
+# When running as root (e.g. via launchd or sudo), determine the logged-in
+# user's home directory instead of using /var/root.
+if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    _console_user="$(stat -f '%Su' /dev/console 2>/dev/null || echo '')"
+    if [[ -n "$_console_user" && "$_console_user" != "root" ]]; then
+        _root_dir="$(dscl . -read "/Users/${_console_user}" NFSHomeDirectory 2>/dev/null | awk '{print $2}')"
+        readonly ASIMOV_ROOT="$_root_dir"
+    else
+        readonly ASIMOV_ROOT=~
+    fi
+else
+    readonly ASIMOV_ROOT=~
+fi
 
 # Paths to unconditionally skip over. This prevents Asimov from modifying the
 # Time Machine exclusions for these paths (and descendants). It has an important
