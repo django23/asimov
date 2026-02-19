@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 * Support glob patterns in sentinel definitions, enabling wildcards like `*.xcodeproj` ([stevegrunwell/asimov#64], props @mdab121)
 * Exclude Xcode DerivedData when `*.xcodeproj` is present ([stevegrunwell/asimov#64], props @mdab121)
+* Exclude well-known global cache directories (`~/.cache`, `~/.gradle/caches`, `~/.m2/repository`, `~/.npm/_cacache`, `~/.nuget/packages`, `~/.kube/cache`, etc.) without requiring sentinel files (inspired by [stevegrunwell/asimov#69], props @pkuczynski)
 * Exclude Next.js build cache (`.next`)
 * Exclude Nuxt build cache (`.nuxt`)
 * Exclude Angular CLI cache (`.angular`)
@@ -127,5 +128,6 @@ Initial public release.
 [#35]: https://github.com/stevegrunwell/asimov/pull/35
 [#56]: https://github.com/stevegrunwell/asimov/pull/56
 [stevegrunwell/asimov#64]: https://github.com/stevegrunwell/asimov/pull/64
+[stevegrunwell/asimov#69]: https://github.com/stevegrunwell/asimov/pull/69
 [stevegrunwell/asimov#87]: https://github.com/stevegrunwell/asimov/pull/87
 [stevegrunwell/asimov#97]: https://github.com/stevegrunwell/asimov/pull/97

@@ -96,6 +96,22 @@ readonly ASIMOV_VENDOR_DIR_SENTINELS=(
     'renv renv.lock'                   # renv (R)
 )
 
+# A list of fixed directories to exclude from Time Machine backups.
+#
+# Unlike sentinel-based pairs above, these directories are always excluded
+# when they exist — they represent global tool caches and artifacts that
+# can be safely restored.
+readonly ASIMOV_FIXED_DIRS=(
+    ~/.cache                           # XDG cache directory
+    ~/.gradle/caches                   # Gradle download cache
+    ~/.gradle/wrapper                  # Gradle wrapper distributions
+    ~/.m2/repository                   # Maven local repository
+    ~/.npm/_cacache                    # npm content-addressable cache
+    ~/.nuget/packages                  # NuGet global packages
+    ~/.kube/cache                      # Kubernetes API cache
+    ~/.kube/http-cache                 # Kubernetes HTTP cache
+)
+
 # Exclude the given paths from Time Machine backups.
 # Reads the newline-separated list of paths from stdin.
 exclude_file() {
@@ -164,3 +180,11 @@ printf '\n\033[0;36mFinding dependency directories with corresponding definition
 find "${ASIMOV_ROOT}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
     | exclude_file \
     ;
+
+# Exclude fixed directories (global tool caches) when they exist.
+printf '\n\033[0;36mExcluding known cache directories…\033[0m\n'
+for dir in "${ASIMOV_FIXED_DIRS[@]}"; do
+    if [[ -d "$dir" ]]; then
+        echo "$dir"
+    fi
+done | exclude_file
