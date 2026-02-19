@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Mock mdfind for testing — returns nothing by default.
+# Set ASIMOV_TEST_MDFIND_RESULTS to a file path to return its contents.
+set -euo pipefail
+
+if [[ -n "${ASIMOV_TEST_MDFIND_RESULTS:-}" && -f "${ASIMOV_TEST_MDFIND_RESULTS}" ]]; then
+    cat "${ASIMOV_TEST_MDFIND_RESULTS}"
+fi

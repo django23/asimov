@@ -141,3 +141,27 @@ load test_helper
   refute_excluded "${HOME}/Code/My-Project/node_modules/dep/node_modules"
   [[ "$(count_exclusions)" -eq 1 ]]
 }
+
+# =============================================================================
+# Skip already-excluded directories (mdfind optimization)
+# =============================================================================
+
+@test "skips directories already excluded from Time Machine" {
+  create_project "Code/Already-Excluded" "package.json" "node_modules"
+  create_project "Code/New-Project" "package.json" "node_modules"
+
+  # Pre-exclude the first project manually
+  echo "${HOME}/Code/Already-Excluded/node_modules" > "$ASIMOV_TEST_EXCLUSIONS"
+
+  # Tell mock mdfind to report it as already excluded
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/Already-Excluded" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  run_asimov
+
+  # The new project should be excluded
+  assert_excluded "${HOME}/Code/New-Project/node_modules"
+  # The already-excluded one should still only have 1 entry (not duplicated)
+  [[ "$(count_exclusions)" -eq 2 ]]
+}

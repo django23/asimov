@@ -35,10 +35,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+* Skip directories already excluded from Time Machine backups for faster subsequent runs (inspired by [stevegrunwell/asimov#97], props @VladRassokhin)
 * Migrated test suite from PHP/PHPUnit to [Bats](https://github.com/bats-core/bats-core) (Bash Automated Testing System), removing the PHP dependency for contributors
 * Replaced Travis CI pipeline with GitHub Actions (macOS 14 + 15 matrix)
 * Replaced PHP `tmutil` mock with a pure bash implementation
 * Moved install script to `scripts/install.sh` with shared variables, now copies binary instead of symlinking ([#35], props @sylver)
+
+### Fixed
+
+* Fixed duplicate Gradle sentinel entries in the sentinels list
+* Fixed typo in comment ("decendents" → "descendants")
 
 ### Removed
 
@@ -122,3 +128,4 @@ Initial public release.
 [#56]: https://github.com/stevegrunwell/asimov/pull/56
 [stevegrunwell/asimov#64]: https://github.com/stevegrunwell/asimov/pull/64
 [stevegrunwell/asimov#87]: https://github.com/stevegrunwell/asimov/pull/87
+[stevegrunwell/asimov#97]: https://github.com/stevegrunwell/asimov/pull/97
