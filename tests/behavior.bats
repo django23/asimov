@@ -244,3 +244,41 @@ load test_helper
   run_asimov
   [[ "$output" == *"No new directories to exclude"* ]]
 }
+
+# =============================================================================
+# Error handling
+# =============================================================================
+
+@test "continues when tmutil fails for a path" {
+  create_project "Code/Good-Project" "package.json" "node_modules"
+  create_project "Code/Bad-Project" "Cargo.toml" "target"
+
+  # Mark the bad project as one that will cause tmutil to fail
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="${TEST_TEMP_DIR}/.tmutil_fail_paths"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/Bad-Project/target" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov
+
+  # The good project should still be excluded
+  assert_excluded "${HOME}/Code/Good-Project/node_modules"
+  # The bad project should NOT be in the exclusions list
+  refute_excluded "${HOME}/Code/Bad-Project/target"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "prints warning when tmutil fails" {
+  create_project "Code/Bad-Project" "package.json" "node_modules"
+
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="${TEST_TEMP_DIR}/.tmutil_fail_paths"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/Bad-Project/node_modules" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov
+
+  # Script should succeed (exit 0) even though tmutil failed
+  [[ "$status" -eq 0 ]]
+  # Output should contain the warning
+  [[ "$output" == *"failed to exclude"* ]]
+  [[ "$(count_exclusions)" -eq 0 ]]
+}

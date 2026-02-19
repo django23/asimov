@@ -45,6 +45,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+* Handle `tmutil` errors gracefully instead of crashing; paths that fail exclusion are skipped with a warning ([stevegrunwell/asimov#101], [stevegrunwell/asimov#86])
 * Detect the logged-in user's home directory when running as root, fixing `brew services` and `sudo` invocations that would search `/var/root` instead ([stevegrunwell/asimov#72])
 * Fixed duplicate Gradle sentinel entries in the sentinels list
 * Fixed typo in comment ("decendents" → "descendants")
@@ -126,9 +127,11 @@ Initial public release.
 [stevegrunwell/asimov#56]: https://github.com/stevegrunwell/asimov/pull/56
 [stevegrunwell/asimov#64]: https://github.com/stevegrunwell/asimov/pull/64
 [stevegrunwell/asimov#69]: https://github.com/stevegrunwell/asimov/pull/69
+[stevegrunwell/asimov#86]: https://github.com/stevegrunwell/asimov/issues/86
 [stevegrunwell/asimov#87]: https://github.com/stevegrunwell/asimov/pull/87
 [stevegrunwell/asimov#97]: https://github.com/stevegrunwell/asimov/pull/97
 [stevegrunwell/asimov#5]: https://github.com/stevegrunwell/asimov/issues/5
 [stevegrunwell/asimov#7]: https://github.com/stevegrunwell/asimov/issues/7
 [stevegrunwell/asimov#72]: https://github.com/stevegrunwell/asimov/issues/72
 [stevegrunwell/asimov#84]: https://github.com/stevegrunwell/asimov/issues/84
+[stevegrunwell/asimov#101]: https://github.com/stevegrunwell/asimov/issues/101

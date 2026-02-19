@@ -138,7 +138,10 @@ exclude_file() {
             continue
         fi
 
-        tmutil addexclusion "${path}"
+        if ! tmutil addexclusion "${path}" 2>/dev/null; then
+            echo "! ${path}: failed to exclude (tmutil error), skipping." >&2
+            continue
+        fi
 
         sizeondisk=$(du -hs "${path}" | cut -f1)
         rawsize=$(du -sk "${path}" | cut -f1)
