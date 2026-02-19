@@ -207,3 +207,29 @@ load test_helper
   second_count="$(count_exclusions)"
   [[ "$second_count" -eq 1 ]]
 }
+
+# =============================================================================
+# Summary output
+# =============================================================================
+
+@test "prints summary with count when directories are excluded" {
+  create_project "Code/Project-A" "package.json" "node_modules"
+  create_project "Code/Project-B" "composer.json" "vendor"
+  run_asimov
+  [[ "$output" == *"Excluded 2 directories"* ]]
+}
+
+@test "prints no-exclusion message when nothing to exclude" {
+  run_asimov
+  [[ "$output" == *"No new directories to exclude"* ]]
+}
+
+@test "prints no-exclusion message when all directories already excluded" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+
+  # Run again — everything is already excluded
+  run_asimov
+  [[ "$output" == *"No new directories to exclude"* ]]
+}

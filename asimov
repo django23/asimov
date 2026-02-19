@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -Eeu -o pipefail
 
+# Temp file for tracking excluded directory sizes (cleaned up on exit).
+ASIMOV_SIZE_LOG="$(mktemp)"
+trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
+
 # Look through the local filesystem and exclude development dependencies
 # from Apple Time Machine backups.
 #
@@ -125,7 +129,9 @@ exclude_file() {
         tmutil addexclusion "${path}"
 
         sizeondisk=$(du -hs "${path}" | cut -f1)
+        rawsize=$(du -sk "${path}" | cut -f1)
         echo "- ${path} has been excluded from Time Machine backups (${sizeondisk})."
+        echo "${rawsize}" >> "$ASIMOV_SIZE_LOG"
     done
 }
 
@@ -188,3 +194,21 @@ for dir in "${ASIMOV_FIXED_DIRS[@]}"; do
         echo "$dir"
     fi
 done | exclude_file
+
+# Print summary.
+_excluded_count=$(wc -l < "$ASIMOV_SIZE_LOG" | tr -d ' ')
+if [[ "$_excluded_count" -gt 0 ]]; then
+    _total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
+
+    if [[ "$_total_kb" -ge 1048576 ]]; then
+        _total_human="$(awk "BEGIN {printf \"%.1fG\", ${_total_kb}/1048576}")"
+    elif [[ "$_total_kb" -ge 1024 ]]; then
+        _total_human="$(awk "BEGIN {printf \"%.1fM\", ${_total_kb}/1024}")"
+    else
+        _total_human="${_total_kb}K"
+    fi
+
+    printf '\n\033[0;32mDone! Excluded %d directories, totalling %s.\033[0m\n' "$_excluded_count" "$_total_human"
+else
+    printf '\n\033[0;32mDone! No new directories to exclude.\033[0m\n'
+fi
