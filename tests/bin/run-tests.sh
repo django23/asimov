@@ -17,7 +17,7 @@ success() {
 section "Running unit tests:"
 
 if type bats > /dev/null; then
-  bats tests/asimov.bats || exit 1
+  bats tests/sentinels.bats tests/behavior.bats || exit 1
 else
   notice "Bats is not installed.\\nYou may install it by running: brew install bats-core"
 fi
