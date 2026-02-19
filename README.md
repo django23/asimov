@@ -100,7 +100,7 @@ Asimov is a thin wrapper around Apple's [`tmutil`](https://ss64.com/mac/tmutil.h
 List everything excluded from Time Machine:
 
 ```sh
-sudo mdfind "com_apple_backup_excludeItem = 'com.apple.backupd'"
+make exclusions
 ```
 
 Remove an exclusion added in error:

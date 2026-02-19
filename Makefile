@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help test lint check install uninstall
+.PHONY: help test lint check install uninstall exclusions
 
 
 help: ## Outputs this help screen
@@ -18,3 +18,6 @@ install: ## Install Asimov and schedule via launchd
 
 uninstall: ## Uninstall Asimov and remove launchd schedule
 	@scripts/uninstall.sh
+
+exclusions: ## List all paths excluded from Time Machine
+	@sudo mdfind "com_apple_backup_excludeItem = 'com.apple.backupd'"
