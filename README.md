@@ -111,18 +111,7 @@ tmutil removeexclusion /path/to/directory
 
 ## Contributing
 
-Contributions are welcome! The project uses [Bats](https://github.com/bats-core/bats-core) for testing and [ShellCheck](https://www.shellcheck.net/) for linting.
-
-```sh
-brew install bats-core shellcheck   # install dev dependencies
-make check                          # run tests + linting
-```
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/). Format your commits as `type(scope): description`:
-
-- `feat(sentinels): add Zig build cache exclusion`
-- `fix: prevent duplicate exclusions on re-run`
-- `test: add coverage for Go modules`
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, guidelines, and how to add new dependency patterns.
 
 ## License
 
