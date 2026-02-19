@@ -131,6 +131,17 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+# =============================================================================
+# ASIMOV_ROOT detection
+# =============================================================================
+
+@test "uses HOME as root directory when not running as root" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 @test "does not descend into excluded dependency directories" {
   # A node_modules inside another node_modules should not be separately excluded
   create_project "Code/My-Project" "package.json" "node_modules"
