@@ -52,10 +52,16 @@ If you would prefer to install Asimov manually, you can do so by cloning the rep
  git clone https://github.com/stevegrunwell/asimov.git --depth 1
 ```
 
-After you've cloned the repository, run the `install.sh` script to automatically:
-* Symlink Asimov to `/usr/local/bin`, making it readily available from anywhere.
-* Schedule Asimov to run once a day, ensuring new projects' dependencies are quickly excluded from Time Machine backups.
-* Run Asimov for the first time, finding all current project dependencies adding them to Time Machine's exclusion list.
+After you've cloned the repository:
+* [Optional] before installing, you can edit `com.stevegrunwell.asimov.plist` to change the scheduling of Asimov (default to once a day).
+* Run `make install` to automatically:
+  * Copy Asimov to `/usr/local/bin`, making it readily available from anywhere.
+  * Schedule Asimov, ensuring new projects' dependencies are quickly excluded from Time Machine backups.
+  * Run Asimov for the first time, finding all current project dependencies adding them to Time Machine's exclusion list.
+
+### Uninstall
+
+Simply run `make uninstall` from your cloned repository.
 
 
 ## How it works

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help test lint check
+.PHONY: help test lint check install uninstall
 
 
 help: ## Outputs this help screen
@@ -9,6 +9,12 @@ test: ## Run Bats tests
 	@bats tests/asimov.bats
 
 lint: ## Run Shellcheck on all shell scripts
-	@shellcheck asimov install.sh tests/bin/run-tests.sh tests/bin/tmutil
+	@shellcheck asimov scripts/install.sh scripts/uninstall.sh tests/bin/run-tests.sh tests/bin/tmutil
 
 check: test lint ## Run tests and linting
+
+install: ## Install Asimov and schedule via launchd
+	@scripts/install.sh
+
+uninstall: ## Uninstall Asimov and remove launchd schedule
+	@scripts/uninstall.sh

@@ -6,11 +6,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+* Added `make install` and `make uninstall` targets for streamlined setup and removal ([#35], props @sylver)
+* Added `scripts/uninstall.sh` to cleanly remove Asimov and its launchd schedule ([#35], props @sylver)
+* Added common interval reference comments to `com.stevegrunwell.asimov.plist` ([#35], props @sylver)
+
 ### Changed
 
 * Migrated test suite from PHP/PHPUnit to [Bats](https://github.com/bats-core/bats-core) (Bash Automated Testing System), removing the PHP dependency for contributors
 * Replaced Travis CI pipeline with GitHub Actions (macOS 14 + 15 matrix)
 * Replaced PHP `tmutil` mock with a pure bash implementation
+* Moved install script to `scripts/install.sh` with shared variables, now copies binary instead of symlinking ([#35], props @sylver)
 
 ### Removed
 
@@ -90,4 +97,5 @@ Initial public release.
 [#43]: https://github.com/stevegrunwell/asimov/pull/43
 [#52]: https://github.com/stevegrunwell/asimov/pull/52
 [#55]: https://github.com/stevegrunwell/asimov/pull/55
+[#35]: https://github.com/stevegrunwell/asimov/pull/35
 [#56]: https://github.com/stevegrunwell/asimov/pull/56
