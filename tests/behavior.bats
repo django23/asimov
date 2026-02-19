@@ -43,6 +43,13 @@ load test_helper
   [[ "$(count_exclusions)" -eq 0 ]]
 }
 
+@test "does not exclude bin without any .NET project file" {
+  mkdir -p "${HOME}/Code/My-Project/bin"
+  run_asimov
+  refute_excluded "${HOME}/Code/My-Project/bin"
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
 # =============================================================================
 # Multi-match and deduplication
 # =============================================================================
