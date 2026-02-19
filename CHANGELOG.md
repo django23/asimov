@@ -44,6 +44,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+* Detect the logged-in user's home directory when running as root, fixing `brew services` and `sudo` invocations that would search `/var/root` instead ([stevegrunwell/asimov#72])
 * Fixed duplicate Gradle sentinel entries in the sentinels list
 * Fixed typo in comment ("decendents" → "descendants")
 
@@ -129,5 +130,6 @@ Initial public release.
 [#56]: https://github.com/stevegrunwell/asimov/pull/56
 [stevegrunwell/asimov#64]: https://github.com/stevegrunwell/asimov/pull/64
 [stevegrunwell/asimov#69]: https://github.com/stevegrunwell/asimov/pull/69
+[stevegrunwell/asimov#72]: https://github.com/stevegrunwell/asimov/issues/72
 [stevegrunwell/asimov#87]: https://github.com/stevegrunwell/asimov/pull/87
 [stevegrunwell/asimov#97]: https://github.com/stevegrunwell/asimov/pull/97
