@@ -38,6 +38,7 @@ Asimov recognizes dependency directories across **30+ patterns** in these ecosys
 | **PHP** | `vendor` |
 | **Ruby** | `vendor` |
 | **Java / Kotlin / Scala** | `.gradle`, `build`, `target` |
+| **.NET (C# / F#)** | `bin`, `obj` |
 | **Swift / Apple** | `.build`, `Carthage`, `Pods` |
 | **Dart / Flutter** | `.dart_tool`, `.packages`, `build` |
 | **Elixir** | `deps`, `_build`, `.build` |

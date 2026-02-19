@@ -300,6 +300,40 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+# --- .NET ---
+
+@test ".NET C#: excludes bin when *.csproj is present" {
+  mkdir -p "${HOME}/Code/My-Project/bin"
+  echo "sentinel" > "${HOME}/Code/My-Project/MyApp.csproj"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/bin"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test ".NET C#: excludes obj when *.csproj is present" {
+  mkdir -p "${HOME}/Code/My-Project/obj"
+  echo "sentinel" > "${HOME}/Code/My-Project/MyApp.csproj"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/obj"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test ".NET F#: excludes bin when *.fsproj is present" {
+  mkdir -p "${HOME}/Code/My-Project/bin"
+  echo "sentinel" > "${HOME}/Code/My-Project/MyApp.fsproj"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/bin"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test ".NET F#: excludes obj when *.fsproj is present" {
+  mkdir -p "${HOME}/Code/My-Project/obj"
+  echo "sentinel" > "${HOME}/Code/My-Project/MyApp.fsproj"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/obj"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 # --- PHP ---
 
 @test "Composer: excludes vendor when composer.json is present" {

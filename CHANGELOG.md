@@ -28,6 +28,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Exclude Elm packages (`elm-stuff`)
 * Exclude Godot 4 editor cache (`.godot`)
 * Exclude R renv environment (`renv`)
+* Exclude .NET build output (`bin`, `obj`) when `*.csproj` or `*.fsproj` project files are present (inspired by [stevegrunwell/asimov#87], props @guigomesa)
 * Added `make install` and `make uninstall` targets for streamlined setup and removal ([#35], props @sylver)
 * Added `scripts/uninstall.sh` to cleanly remove Asimov and its launchd schedule ([#35], props @sylver)
 * Added common interval reference comments to `com.stevegrunwell.asimov.plist` ([#35], props @sylver)
@@ -120,3 +121,4 @@ Initial public release.
 [#35]: https://github.com/stevegrunwell/asimov/pull/35
 [#56]: https://github.com/stevegrunwell/asimov/pull/56
 [stevegrunwell/asimov#64]: https://github.com/stevegrunwell/asimov/pull/64
+[stevegrunwell/asimov#87]: https://github.com/stevegrunwell/asimov/pull/87
