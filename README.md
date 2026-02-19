@@ -86,6 +86,11 @@ If a directory has been excluded from backups in error, you can remove the exclu
  tmutil removeexclusion /path/to/directory
 ```
 
+## Maintainers
+
+- [Steve Grunwell](https://github.com/stevegrunwell) (creator)
+- [Django Eijgensteijn](https://github.com/django23)
+
 ## Contributing
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. Please format your commits as `type(scope): description`, for example:
