@@ -72,6 +72,10 @@ readonly ASIMOV_VENDOR_DIR_SENTINELS=(
     'target deps.edn'                  # Clojure CLI
     '.cpcache deps.edn'                # Clojure CLI classpath cache
     '.shadow-cljs shadow-cljs.edn'     # Shadow-CLJS (ClojureScript)
+    'bin *.csproj'                     # .NET C# build output
+    'obj *.csproj'                     # .NET C# intermediate output
+    'bin *.fsproj'                     # .NET F# build output
+    'obj *.fsproj'                     # .NET F# intermediate output
     'vendor composer.json'             # Composer (PHP)
     'vendor Gemfile'                   # Bundler (Ruby)
     'vendor go.mod'                    # Go Modules (Golang)
