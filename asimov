@@ -20,7 +20,7 @@ set -Eeu -o pipefail
 readonly ASIMOV_ROOT=~
 
 # Paths to unconditionally skip over. This prevents Asimov from modifying the
-# Time Machine exclusions for these paths (and decendents). It has an important
+# Time Machine exclusions for these paths (and descendants). It has an important
 # side-effect of speeding up the search.
 readonly ASIMOV_SKIP_PATHS=(
     ~/.Trash
@@ -51,8 +51,6 @@ readonly ASIMOV_VENDOR_DIR_SENTINELS=(
     'Pods Podfile'                     # CocoaPods
     'DerivedData *.xcodeproj'          # Xcode DerivedData
     'bower_components bower.json'      # Bower (JavaScript)
-    'build build.gradle'               # Gradle
-    'build build.gradle.kts'           # Gradle Kotlin Script
     'build pubspec.yaml'               # Flutter (Dart)
     'build setup.py'                   # Python
     'dist setup.py'                    # PyPI Publishing (Python)
@@ -98,6 +96,22 @@ readonly ASIMOV_VENDOR_DIR_SENTINELS=(
     'renv renv.lock'                   # renv (R)
 )
 
+# A list of fixed directories to exclude from Time Machine backups.
+#
+# Unlike sentinel-based pairs above, these directories are always excluded
+# when they exist — they represent global tool caches and artifacts that
+# can be safely restored.
+readonly ASIMOV_FIXED_DIRS=(
+    ~/.cache                           # XDG cache directory
+    ~/.gradle/caches                   # Gradle download cache
+    ~/.gradle/wrapper                  # Gradle wrapper distributions
+    ~/.m2/repository                   # Maven local repository
+    ~/.npm/_cacache                    # npm content-addressable cache
+    ~/.nuget/packages                  # NuGet global packages
+    ~/.kube/cache                      # Kubernetes API cache
+    ~/.kube/http-cache                 # Kubernetes HTTP cache
+)
+
 # Exclude the given paths from Time Machine backups.
 # Reads the newline-separated list of paths from stdin.
 exclude_file() {
@@ -120,6 +134,13 @@ declare -a find_parameters_skip=()
 for d in "${ASIMOV_SKIP_PATHS[@]}"; do
     find_parameters_skip+=( -not \( -path "${d}" -prune \) )
 done
+
+# Skip directories already excluded from Time Machine backups.
+# Uses Spotlight metadata which may not report all exclusions — any missed
+# directories are still handled by the tmutil isexcluded check in exclude_file().
+while IFS= read -r line; do
+    [[ -n "$line" ]] && find_parameters_skip+=( -not \( -path "${line}" -prune \) )
+done < <(mdfind -onlyin "${ASIMOV_ROOT}" "com_apple_backup_excludeItem = 'com.apple.backupd'" 2>/dev/null | sort -u)
 
 # Iterate over the directory/sentinel pairs to construct the `find` expression.
 declare -a find_parameters_vendor=()
@@ -159,3 +180,11 @@ printf '\n\033[0;36mFinding dependency directories with corresponding definition
 find "${ASIMOV_ROOT}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
     | exclude_file \
     ;
+
+# Exclude fixed directories (global tool caches) when they exist.
+printf '\n\033[0;36mExcluding known cache directories…\033[0m\n'
+for dir in "${ASIMOV_FIXED_DIRS[@]}"; do
+    if [[ -d "$dir" ]]; then
+        echo "$dir"
+    fi
+done | exclude_file

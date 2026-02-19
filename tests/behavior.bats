@@ -141,3 +141,69 @@ load test_helper
   refute_excluded "${HOME}/Code/My-Project/node_modules/dep/node_modules"
   [[ "$(count_exclusions)" -eq 1 ]]
 }
+
+# =============================================================================
+# Skip already-excluded directories (mdfind optimization)
+# =============================================================================
+
+@test "skips directories already excluded from Time Machine" {
+  create_project "Code/Already-Excluded" "package.json" "node_modules"
+  create_project "Code/New-Project" "package.json" "node_modules"
+
+  # Pre-exclude the first project manually
+  echo "${HOME}/Code/Already-Excluded/node_modules" > "$ASIMOV_TEST_EXCLUSIONS"
+
+  # Tell mock mdfind to report it as already excluded
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/Already-Excluded" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  run_asimov
+
+  # The new project should be excluded
+  assert_excluded "${HOME}/Code/New-Project/node_modules"
+  # The already-excluded one should still only have 1 entry (not duplicated)
+  [[ "$(count_exclusions)" -eq 2 ]]
+}
+
+# =============================================================================
+# Fixed directories (global caches)
+# =============================================================================
+
+@test "excludes fixed directory when it exists" {
+  mkdir -p "${HOME}/.cache"
+  run_asimov
+  assert_excluded "${HOME}/.cache"
+}
+
+@test "does not fail when fixed directory does not exist" {
+  # Don't create any fixed dirs — asimov should still succeed
+  run_asimov
+  [[ "$status" -eq 0 ]]
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
+@test "excludes multiple fixed directories when they exist" {
+  mkdir -p "${HOME}/.cache"
+  mkdir -p "${HOME}/.gradle/caches"
+  mkdir -p "${HOME}/.npm/_cacache"
+  run_asimov
+  assert_excluded "${HOME}/.cache"
+  assert_excluded "${HOME}/.gradle/caches"
+  assert_excluded "${HOME}/.npm/_cacache"
+  [[ "$(count_exclusions)" -eq 3 ]]
+}
+
+@test "does not re-exclude already excluded fixed directory" {
+  mkdir -p "${HOME}/.cache"
+  run_asimov
+  assert_excluded "${HOME}/.cache"
+  local first_count
+  first_count="$(count_exclusions)"
+  [[ "$first_count" -eq 1 ]]
+
+  run_asimov
+  local second_count
+  second_count="$(count_exclusions)"
+  [[ "$second_count" -eq 1 ]]
+}
