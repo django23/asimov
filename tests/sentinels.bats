@@ -112,6 +112,20 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+@test "Python: excludes venv when pyproject.toml is present" {
+  create_project "Code/My-Project" "pyproject.toml" "venv"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/venv"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "PDM: excludes __pypackages__ when pyproject.toml is present" {
+  create_project "Code/My-Project" "pyproject.toml" "__pypackages__"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/__pypackages__"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 @test "Python: excludes build when setup.py is present" {
   create_project "Code/My-Project" "setup.py" "build"
   run_asimov
@@ -174,6 +188,48 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+@test "Next.js: excludes .next when package.json is present" {
+  create_project "Code/My-Project" "package.json" ".next"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.next"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Nuxt: excludes .nuxt when package.json is present" {
+  create_project "Code/My-Project" "package.json" ".nuxt"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.nuxt"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Angular: excludes .angular when angular.json is present" {
+  create_project "Code/My-Project" "angular.json" ".angular"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.angular"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "SvelteKit: excludes .svelte-kit when svelte.config.js is present" {
+  create_project "Code/My-Project" "svelte.config.js" ".svelte-kit"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.svelte-kit"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Turborepo: excludes .turbo when turbo.json is present" {
+  create_project "Code/My-Project" "turbo.json" ".turbo"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.turbo"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Yarn Berry: excludes .yarn when .yarnrc.yml is present" {
+  create_project "Code/My-Project" ".yarnrc.yml" ".yarn"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.yarn"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 # --- Rust ---
 
 @test "Cargo: excludes target when Cargo.toml is present" {
@@ -203,6 +259,36 @@ load test_helper
   create_project "Code/My-Project" "plugins.sbt" "target"
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/target"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- Clojure ---
+
+@test "Leiningen: excludes target when project.clj is present" {
+  create_project "Code/My-Project" "project.clj" "target"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/target"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Clojure CLI: excludes target when deps.edn is present" {
+  create_project "Code/My-Project" "deps.edn" "target"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/target"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Clojure CLI: excludes .cpcache when deps.edn is present" {
+  create_project "Code/My-Project" "deps.edn" ".cpcache"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.cpcache"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Shadow-CLJS: excludes .shadow-cljs when shadow-cljs.edn is present" {
+  create_project "Code/My-Project" "shadow-cljs.edn" ".shadow-cljs"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.shadow-cljs"
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
@@ -249,6 +335,13 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+@test "Elixir: excludes _build when mix.exs is present" {
+  create_project "Code/My-Project" "mix.exs" "_build"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/_build"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 # --- Terraform ---
 
 @test "Terraform: excludes .terraform.d when .terraformrc is present" {
@@ -265,11 +358,79 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+@test "Terraform: excludes .terraform when .terraform.lock.hcl is present" {
+  create_project "Code/My-Project" ".terraform.lock.hcl" ".terraform"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.terraform"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- direnv ---
+
+@test "direnv: excludes .direnv when .envrc is present" {
+  create_project "Code/My-Project" ".envrc" ".direnv"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.direnv"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 # --- AWS ---
 
 @test "AWS CDK: excludes cdk.out when cdk.json is present" {
   create_project "Code/My-Project" "cdk.json" "cdk.out"
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/cdk.out"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- OCaml ---
+
+@test "Dune: excludes _build when dune-project is present" {
+  create_project "Code/My-Project" "dune-project" "_build"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/_build"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- Zig ---
+
+@test "Zig: excludes .zig-cache when build.zig is present" {
+  create_project "Code/My-Project" "build.zig" ".zig-cache"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.zig-cache"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "Zig: excludes zig-out when build.zig is present" {
+  create_project "Code/My-Project" "build.zig" "zig-out"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/zig-out"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- Elm ---
+
+@test "Elm: excludes elm-stuff when elm.json is present" {
+  create_project "Code/My-Project" "elm.json" "elm-stuff"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/elm-stuff"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- Godot ---
+
+@test "Godot: excludes .godot when project.godot is present" {
+  create_project "Code/My-Project" "project.godot" ".godot"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.godot"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+# --- R ---
+
+@test "renv: excludes renv when renv.lock is present" {
+  create_project "Code/My-Project" "renv.lock" "renv"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/renv"
   [[ "$(count_exclusions)" -eq 1 ]]
 }

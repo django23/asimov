@@ -57,19 +57,40 @@ readonly ASIMOV_VENDOR_DIR_SENTINELS=(
     'dist setup.py'                    # PyPI Publishing (Python)
     'node_modules package.json'        # npm, Yarn (NodeJS)
     '.parcel-cache package.json'       # Parcel v2 cache (JavaScript)
+    '.next package.json'               # Next.js (JavaScript)
+    '.nuxt package.json'               # Nuxt (JavaScript)
+    '.angular angular.json'            # Angular (JavaScript)
+    '.svelte-kit svelte.config.js'     # SvelteKit (JavaScript)
+    '.turbo turbo.json'                # Turborepo (JavaScript)
+    '.yarn .yarnrc.yml'                # Yarn Berry cache (JavaScript)
     'target Cargo.toml'                # Cargo (Rust)
     'target pom.xml'                   # Maven
     'target build.sbt'                 # Sbt (Scala)
     'target plugins.sbt'               # Sbt plugins (Scala)
+    'target project.clj'               # Leiningen (Clojure)
+    'target deps.edn'                  # Clojure CLI
+    '.cpcache deps.edn'                # Clojure CLI classpath cache
+    '.shadow-cljs shadow-cljs.edn'     # Shadow-CLJS (ClojureScript)
     'vendor composer.json'             # Composer (PHP)
     'vendor Gemfile'                   # Bundler (Ruby)
     'vendor go.mod'                    # Go Modules (Golang)
     'venv requirements.txt'            # virtualenv (Python)
+    'venv pyproject.toml'              # virtualenv (Python)
+    '__pypackages__ pyproject.toml'    # PEP 582/PDM (Python)
     'deps mix.exs'                     # Mix dependencies (Elixir)
     '.build mix.exs'                   # Mix build files (Elixir)
+    '_build mix.exs'                   # Mix build output (Elixir)
     '.terraform.d .terraformrc'        # Terraform plugin cache
     '.terragrunt-cache terragrunt.hcl' # Terragrunt
+    '.terraform .terraform.lock.hcl'   # Terraform providers/modules
+    '.direnv .envrc'                   # direnv
     'cdk.out cdk.json'                 # AWS CDK
+    '_build dune-project'              # Dune (OCaml)
+    '.zig-cache build.zig'             # Zig build cache
+    'zig-out build.zig'                # Zig build output
+    'elm-stuff elm.json'               # Elm packages
+    '.godot project.godot'             # Godot 4 editor cache
+    'renv renv.lock'                   # renv (R)
 )
 
 # Exclude the given paths from Time Machine backups.

@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+* Exclude Next.js build cache (`.next`)
+* Exclude Nuxt build cache (`.nuxt`)
+* Exclude Angular CLI cache (`.angular`)
+* Exclude SvelteKit build output (`.svelte-kit`)
+* Exclude Turborepo cache (`.turbo`)
+* Exclude Yarn Berry cache (`.yarn`)
+* Exclude Leiningen/Clojure CLI `target` and `.cpcache` directories
+* Exclude Shadow-CLJS cache (`.shadow-cljs`)
+* Exclude Python virtualenv `venv` with `pyproject.toml` sentinel
+* Exclude PEP 582/PDM local packages (`__pypackages__`)
+* Exclude Elixir/Mix standard `_build` directory
+* Exclude Terraform providers/modules (`.terraform` with `.terraform.lock.hcl`)
+* Exclude direnv output (`.direnv`)
+* Exclude OCaml/Dune build output (`_build`)
+* Exclude Zig build cache (`.zig-cache`) and output (`zig-out`)
+* Exclude Elm packages (`elm-stuff`)
+* Exclude Godot 4 editor cache (`.godot`)
+* Exclude R renv environment (`renv`)
 * Added `make install` and `make uninstall` targets for streamlined setup and removal ([#35], props @sylver)
 * Added `scripts/uninstall.sh` to cleanly remove Asimov and its launchd schedule ([#35], props @sylver)
 * Added common interval reference comments to `com.stevegrunwell.asimov.plist` ([#35], props @sylver)
