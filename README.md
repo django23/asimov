@@ -85,3 +85,11 @@ If a directory has been excluded from backups in error, you can remove the exclu
 ```bash
  tmutil removeexclusion /path/to/directory
 ```
+
+## Contributing
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. Please format your commits as `type(scope): description`, for example:
+
+- `feat(sentinels): add Zig build cache exclusion`
+- `fix: prevent duplicate exclusions on re-run`
+- `test: add coverage for Go modules`
