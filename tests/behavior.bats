@@ -165,3 +165,45 @@ load test_helper
   # The already-excluded one should still only have 1 entry (not duplicated)
   [[ "$(count_exclusions)" -eq 2 ]]
 }
+
+# =============================================================================
+# Fixed directories (global caches)
+# =============================================================================
+
+@test "excludes fixed directory when it exists" {
+  mkdir -p "${HOME}/.cache"
+  run_asimov
+  assert_excluded "${HOME}/.cache"
+}
+
+@test "does not fail when fixed directory does not exist" {
+  # Don't create any fixed dirs — asimov should still succeed
+  run_asimov
+  [[ "$status" -eq 0 ]]
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
+@test "excludes multiple fixed directories when they exist" {
+  mkdir -p "${HOME}/.cache"
+  mkdir -p "${HOME}/.gradle/caches"
+  mkdir -p "${HOME}/.npm/_cacache"
+  run_asimov
+  assert_excluded "${HOME}/.cache"
+  assert_excluded "${HOME}/.gradle/caches"
+  assert_excluded "${HOME}/.npm/_cacache"
+  [[ "$(count_exclusions)" -eq 3 ]]
+}
+
+@test "does not re-exclude already excluded fixed directory" {
+  mkdir -p "${HOME}/.cache"
+  run_asimov
+  assert_excluded "${HOME}/.cache"
+  local first_count
+  first_count="$(count_exclusions)"
+  [[ "$first_count" -eq 1 ]]
+
+  run_asimov
+  local second_count
+  second_count="$(count_exclusions)"
+  [[ "$second_count" -eq 1 ]]
+}

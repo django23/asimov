@@ -49,6 +49,7 @@ Asimov recognizes dependency directories across **30+ patterns** in these ecosys
 | **R** | `renv` |
 | **DevOps / IaC** | `.terraform`, `.terragrunt-cache`, `.vagrant`, `.direnv`, `cdk.out` |
 | **Game dev** | `.godot` |
+| **Global caches** | `~/.cache`, `~/.gradle/caches`, `~/.m2/repository`, `~/.npm/_cacache`, `~/.nuget/packages`, `~/.kube/cache` |
 
 Each directory is only excluded when its corresponding config file (the "sentinel") exists — so `node_modules` is only excluded if `package.json` is present, `vendor` only if `composer.json`, `go.mod`, or `Gemfile` exists, etc.
 
@@ -94,7 +95,11 @@ brew uninstall asimov
 
 ## How it works
 
-Asimov is a thin wrapper around Apple's [`tmutil`](https://ss64.com/mac/tmutil.html). It builds a single `find` command from all known dependency patterns, walks your home directory (skipping `~/Library` and `~/.Trash`), and pipes matching paths through `tmutil addexclusion`. Directories already excluded are skipped automatically — safe to run as often as you like.
+Asimov is a thin wrapper around Apple's [`tmutil`](https://ss64.com/mac/tmutil.html). It builds a single `find` command from all known dependency patterns, walks your home directory (skipping `~/Library` and `~/.Trash`), and pipes matching paths through `tmutil addexclusion`. It also unconditionally excludes well-known global tool caches (like `~/.cache`, `~/.gradle/caches`, and `~/.npm/_cacache`) that can always be safely restored. Directories already excluded are skipped automatically — safe to run as often as you like.
+
+> **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
+
+> **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
 
 > **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
 
