@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+* Migrated test suite from PHP/PHPUnit to [Bats](https://github.com/bats-core/bats-core) (Bash Automated Testing System), removing the PHP dependency for contributors
+* Replaced Travis CI pipeline with GitHub Actions (macOS 14 + 15 matrix)
+* Replaced PHP `tmutil` mock with a pure bash implementation
+
+### Removed
+
+* Removed PHP test infrastructure (`composer.json`, `phpunit.xml.dist`, and PHP test files)
+* Removed Travis CI configuration (`.travis.yml`)
+
+
 ## [Version 0.3.0] — 2020-06-16
 
 ### Added

@@ -1,19 +1,33 @@
-#!/usr/bin/env php
-<?php
-/**
- * A mock implementation of Apple's Time Machine utility (tmutil).
- *
- * @package Asimov
- */
+#!/usr/bin/env bash
+#
+# A mock implementation of Apple's Time Machine utility (tmutil).
+#
+# Uses the ASIMOV_TEST_EXCLUSIONS environment variable, which should point
+# to a temporary file that acts as the exclusion database.
 
-require_once dirname(__DIR__) . '/TMUtilMock.php';
+set -euo pipefail
 
-use Tests\TMUtilMock;
+if [[ -z "${ASIMOV_TEST_EXCLUSIONS:-}" ]]; then
+  echo "Error: ASIMOV_TEST_EXCLUSIONS is not set." >&2
+  exit 1
+fi
 
-if (3 > $argc) {
-    throw new \ArgumentCountError('Expected to see "tmutil", the sub-command, and the path.');
-}
+subcommand="${1:-}"
+path="${2:-}"
 
-$tmutil = new TMUtilMock;
-
-return call_user_func([$tmutil, $argv[1]], $argv[2]);
+case "$subcommand" in
+  isexcluded)
+    if grep -Fxq "$path" "$ASIMOV_TEST_EXCLUSIONS" 2>/dev/null; then
+      printf '[Excluded]\t%s\n' "$path"
+    else
+      printf '[Included]\t%s\n' "$path"
+    fi
+    ;;
+  addexclusion)
+    printf '%s\n' "$path" >> "$ASIMOV_TEST_EXCLUSIONS"
+    ;;
+  *)
+    echo "Unknown subcommand: $subcommand" >&2
+    exit 1
+    ;;
+esac

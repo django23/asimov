@@ -16,16 +16,16 @@ success() {
 
 section "Running unit tests:"
 
-if type phpunit > /dev/null; then
-  phpunit --testdox --colors=always || exit 1
+if type bats > /dev/null; then
+  bats tests/asimov.bats || exit 1
 else
-  notice "PHPUnit is not installed.\\nYou may install test dependencies by running: composer install"
+  notice "Bats is not installed.\\nYou may install it by running: brew install bats-core"
 fi
 
 section "Checking coding standards:"
 
 if type shellcheck > /dev/null; then
-  shellcheck asimov ./*.sh tests/bin/run-tests.sh || exit 1
+  shellcheck asimov ./*.sh tests/bin/run-tests.sh tests/bin/tmutil || exit 1
   success "No problems detected!"
 else
   notice "Shellcheck is not installed.\\nPlease visit https://www.shellcheck.net/ for installation options."

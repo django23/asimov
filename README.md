@@ -1,7 +1,7 @@
 # Asimov
 
 
-[![Build Status](https://travis-ci.com/stevegrunwell/asimov.svg?branch=develop)](https://travis-ci.com/stevegrunwell/asimov)
+[![Tests](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml)
 ![Requires macOS 10.13 (High Sierra) or newer](https://img.shields.io/badge/macOS-10.13%20or%20higher-blue)
 [![MIT license](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 
