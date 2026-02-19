@@ -165,6 +165,14 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+@test "Xcode: excludes DerivedData when *.xcodeproj is present" {
+  mkdir -p "${HOME}/Code/My-Project/DerivedData"
+  mkdir -p "${HOME}/Code/My-Project/MyApp.xcodeproj"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/DerivedData"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 # --- JavaScript ---
 
 @test "Bower: excludes bower_components when bower.json is present" {

@@ -36,6 +36,13 @@ load test_helper
   [[ "$(count_exclusions)" -eq 0 ]]
 }
 
+@test "does not exclude DerivedData without *.xcodeproj" {
+  mkdir -p "${HOME}/Code/My-Project/DerivedData"
+  run_asimov
+  refute_excluded "${HOME}/Code/My-Project/DerivedData"
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
 # =============================================================================
 # Multi-match and deduplication
 # =============================================================================
