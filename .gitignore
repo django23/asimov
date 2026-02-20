@@ -1,4 +1,7 @@
 .DS_Store
-plans
 CLAUDE.md
 .worktrees
+.cursor
+.idea
+.vscode
+.cursor
