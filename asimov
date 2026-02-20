@@ -17,11 +17,12 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 #
 # For a full explanation, please see https://apple.stackexchange.com/a/25833/206772
 #
-# @version 0.3.0
+# @version 0.4.0
 # @author  Steve Grunwell
 # @license MIT
 
-readonly ASIMOV_VERSION='0.3.0'
+# Keep ASIMOV_VERSION in sync with CHANGELOG and package managers (e.g. Homebrew).
+readonly ASIMOV_VERSION='0.4.0'
 
 print_usage() {
     printf 'Usage: asimov [--dry-run] [--help] [--version]\n'
@@ -173,6 +174,18 @@ readonly ASIMOV_FIXED_DIRS=(
     "${ASIMOV_ROOT}/.kube/http-cache"                 # Kubernetes HTTP cache
 )
 
+# Append path size to ASIMOV_SIZE_LOG and print a line. Message template must contain %s for size.
+record_excluded_path() {
+    local path="$1"
+    local message_tpl="$2"
+    local sizeondisk rawsize line
+    sizeondisk=$(du -hs "${path}" 2>/dev/null | cut -f1 || echo "?")
+    rawsize=$(du -sk "${path}" 2>/dev/null | cut -f1 || echo "0")
+    line="- ${message_tpl//%s/$sizeondisk}"
+    printf '%s\n' "$line"
+    echo "$rawsize" >> "$ASIMOV_SIZE_LOG"
+}
+
 # Process newline-separated paths from stdin: for each path, check tmutil isexcluded,
 # then call tmutil addexclusion (unless ASIMOV_DRY_RUN is set); append size to ASIMOV_SIZE_LOG.
 # When ASIMOV_DRY_RUN is non-empty, only prints what would be excluded and does not call tmutil.
@@ -182,11 +195,7 @@ exclude_paths_from_stdin() {
     while IFS=$'\n' read -r path; do
         [[ -d "$path" ]] || continue
         if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
-            local sizeondisk rawsize
-            sizeondisk=$(du -hs "${path}" 2>/dev/null | cut -f1 || echo "?")
-            rawsize=$(du -sk "${path}" 2>/dev/null | cut -f1 || echo "0")
-            echo "- Would exclude: ${path} (${sizeondisk})."
-            echo "${rawsize}" >> "$ASIMOV_SIZE_LOG"
+            record_excluded_path "$path" "Would exclude: ${path} (%s)."
             continue
         fi
 
@@ -200,11 +209,7 @@ exclude_paths_from_stdin() {
             continue
         fi
 
-        local sizeondisk rawsize
-        sizeondisk=$(du -hs "${path}" | cut -f1)
-        rawsize=$(du -sk "${path}" | cut -f1)
-        echo "- ${path} has been excluded from Time Machine backups (${sizeondisk})."
-        echo "${rawsize}" >> "$ASIMOV_SIZE_LOG"
+        record_excluded_path "$path" "${path} has been excluded from Time Machine backups (%s)."
     done
 }
 
@@ -284,6 +289,11 @@ print_exclusion_summary() {
 }
 
 # --- Main: build find params, run find, process paths, then fixed dirs, then summary ---
+
+if [[ ! -d "$ASIMOV_ROOT" ]]; then
+    echo "asimov: root directory does not exist or is not a directory: $ASIMOV_ROOT" >&2
+    exit 1
+fi
 
 build_find_skip_params
 build_find_vendor_params

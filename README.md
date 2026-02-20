@@ -33,6 +33,12 @@ asimov --dry-run
 
 Use `asimov --help` for options and `asimov --version` for the version.
 
+| Option      | Description |
+| ----------- | ----------- |
+| `--dry-run` | Print what would be excluded without changing Time Machine |
+| `--help`    | Show usage and options, then exit |
+| `--version` | Show version and exit |
+
 ## Supported ecosystems
 
 Asimov recognizes dependency directories across **30+ patterns** in these ecosystems:

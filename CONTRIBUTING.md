@@ -25,6 +25,7 @@ make check
 | `make test` | Run the [Bats](https://github.com/bats-core/bats-core) test suite |
 | `make lint` | Run [ShellCheck](https://www.shellcheck.net/) on all shell scripts |
 | `make check` | Run both tests and linting |
+| `make exclusions` | List all paths excluded from Time Machine (requires sudo) |
 
 To run a single test by name: `bats tests/behavior.bats --filter "substring of test name"` or `bats tests/sentinels.bats --filter "npm"`.
 

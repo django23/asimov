@@ -131,6 +131,13 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+@test "excludes directory when project path contains spaces" {
+  create_project "Code/My Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My Project/node_modules"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
 # =============================================================================
 # ASIMOV_ROOT detection
 # =============================================================================
@@ -143,6 +150,13 @@ load test_helper
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/node_modules"
   [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "exits with error when root directory does not exist" {
+  run env HOME=/nonexistent-asimov-root "${BATS_TEST_DIRNAME}/../asimov"
+  [[ "$status" -eq 1 ]]
+  [[ "$output" == *"root directory"* ]]
+  [[ "$output" == *"does not exist"* ]]
 }
 
 @test "does not descend into excluded dependency directories" {
@@ -301,7 +315,7 @@ load test_helper
 @test "version option prints version and exits 0" {
   run_asimov --version
   [[ "$status" -eq 0 ]]
-  [[ "$output" == *"0.3.0"* ]]
+  [[ "$output" == *"0.4.0"* ]]
 }
 
 @test "unknown option exits 1 and prints error" {
@@ -321,6 +335,10 @@ load test_helper
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"Would exclude"* ]]
   [[ "$output" == *"node_modules"* ]]
+  # Summary line must show would-exclude and a size (K, M, or G)
+  [[ "$output" == *"Would exclude"*"directories"* ]]
+  [[ "$output" == *"totalling"* ]]
+  [[ "$output" =~ totalling\ [0-9]+[KMG]\. ]]
   # Mock tmutil should not have recorded any exclusion
   [[ "$(count_exclusions)" -eq 0 ]]
 }
