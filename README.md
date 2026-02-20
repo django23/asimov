@@ -1,6 +1,6 @@
 # Asimov
 
-[![Tests](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/djanstevegrunwellgo23/asimov/actions/workflows/tests.yml)
+[![Tests](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml)
 [![Homebrew](https://img.shields.io/badge/homebrew-available-orange?logo=homebrew&logoColor=white)](https://formulae.brew.sh/formula/asimov)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT201250)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
@@ -23,6 +23,12 @@ To run on-demand instead:
 
 ```sh
 asimov
+```
+
+To see what would be excluded without changing Time Machine (dry run):
+
+```sh
+asimov --dry-run
 ```
 
 ## Supported ecosystems
@@ -96,8 +102,6 @@ brew uninstall asimov
 ## How it works
 
 Asimov is a thin wrapper around Apple's [`tmutil`](https://ss64.com/mac/tmutil.html). It builds a single `find` command from all known dependency patterns, walks your home directory (skipping `~/Library` and `~/.Trash`), and pipes matching paths through `tmutil addexclusion`. It also unconditionally excludes well-known global tool caches (like `~/.cache`, `~/.gradle/caches`, and `~/.npm/_cacache`) that can always be safely restored. Directories already excluded are skipped automatically — safe to run as often as you like.
-
-> **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
 
 > **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
 

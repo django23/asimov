@@ -26,12 +26,14 @@ make check
 | `make lint` | Run [ShellCheck](https://www.shellcheck.net/) on all shell scripts |
 | `make check` | Run both tests and linting |
 
+To run a single test by name: `bats tests/behavior.bats --filter "substring of test name"` or `bats tests/sentinels.bats --filter "npm"`.
+
 ## Adding a new dependency pattern
 
 This is the most common type of contribution. To add a new ecosystem or dependency directory:
 
 1. **Add the sentinel pair** to the `ASIMOV_VENDOR_DIR_SENTINELS` array in [`asimov`](asimov) — one `'directory sentinel'` entry per pattern.
-2. **Add a test** in [`tests/sentinels.bats`](tests/sentinels.bats) using `create_project` to build the fixture.
+2. **Add a test** in [`tests/sentinels.bats`](tests/sentinels.bats) using `create_project` to build the fixture. Keep this file in sync with `ASIMOV_VENDOR_DIR_SENTINELS` (one test per sentinel pair).
 3. **Run `make check`** to verify your changes pass tests and linting.
 4. **Add a changelog entry** under the `[Unreleased]` section in [`CHANGELOG.md`](CHANGELOG.md).
 

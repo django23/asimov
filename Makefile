@@ -9,7 +9,7 @@ test: ## Run Bats tests
 	@bats tests/sentinels.bats tests/behavior.bats
 
 lint: ## Run Shellcheck on all shell scripts
-	@shellcheck asimov scripts/install.sh scripts/uninstall.sh tests/bin/run-tests.sh tests/bin/tmutil tests/bin/mdfind
+	@shellcheck asimov scripts/install.sh scripts/uninstall.sh tests/test_helper.bash tests/bin/run-tests.sh tests/bin/tmutil tests/bin/mdfind
 
 check: test lint ## Run tests and linting
 

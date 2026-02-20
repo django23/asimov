@@ -134,6 +134,9 @@ load test_helper
 # =============================================================================
 # ASIMOV_ROOT detection
 # =============================================================================
+# When not root, ASIMOV_ROOT equals HOME (verified below). When running as root
+# (e.g. launchd/sudo), ASIMOV_ROOT is the console user's home — that path is
+# tested manually or via integration; full simulation would require mocked stat/dscl.
 
 @test "uses HOME as root directory when not running as root" {
   create_project "Code/My-Project" "package.json" "node_modules"
@@ -280,5 +283,19 @@ load test_helper
   [[ "$status" -eq 0 ]]
   # Output should contain the warning
   [[ "$output" == *"failed to exclude"* ]]
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
+# =============================================================================
+# --dry-run
+# =============================================================================
+
+@test "dry-run prints would-exclude but does not call tmutil" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run "${BATS_TEST_DIRNAME}/../asimov" --dry-run
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Would exclude"* ]]
+  [[ "$output" == *"node_modules"* ]]
+  # Mock tmutil should not have recorded any exclusion
   [[ "$(count_exclusions)" -eq 0 ]]
 }
