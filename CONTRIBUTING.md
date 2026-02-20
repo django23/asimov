@@ -7,7 +7,7 @@ Thanks for your interest in contributing! Asimov is a small, focused project and
 **Prerequisites:** macOS with [Homebrew](https://brew.sh) installed.
 
 ```sh
-git clone https://github.com/django23/asimov.git
+git clone https://github.com/stevegrunwell/asimov.git
 cd asimov
 brew install bats-core shellcheck
 ```
@@ -89,4 +89,4 @@ Makefile                # Build targets (test, lint, check, install, uninstall)
 
 ## Questions?
 
-Open an [issue](https://github.com/django23/asimov/issues) — happy to help.
+Open an [issue](https://github.com/stevegrunwell/asimov/issues) — happy to help.

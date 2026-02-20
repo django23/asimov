@@ -1,6 +1,6 @@
 # Asimov
 
-[![Tests](https://github.com/django23/asimov/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/django23/asimov/actions/workflows/tests.yml)
+[![Tests](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/djanstevegrunwellgo23/asimov/actions/workflows/tests.yml)
 [![Homebrew](https://img.shields.io/badge/homebrew-available-orange?logo=homebrew&logoColor=white)](https://formulae.brew.sh/formula/asimov)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT201250)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
