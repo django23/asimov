@@ -31,6 +31,8 @@ To see what would be excluded without changing Time Machine (dry run):
 asimov --dry-run
 ```
 
+Use `asimov --help` for options and `asimov --version` for the version.
+
 ## Supported ecosystems
 
 Asimov recognizes dependency directories across **30+ patterns** in these ecosystems:

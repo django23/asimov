@@ -21,13 +21,33 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 # @author  Steve Grunwell
 # @license MIT
 
+readonly ASIMOV_VERSION='0.3.0'
+
+print_usage() {
+    printf 'Usage: asimov [--dry-run] [--help] [--version]\n'
+    printf '\n'
+    printf 'Exclude development dependency directories from Time Machine backups.\n'
+    printf '\n'
+    printf 'Options:\n'
+    printf '  --dry-run   Print what would be excluded without changing Time Machine\n'
+    printf '  --help      Show this help and exit\n'
+    printf '  --version   Show version and exit\n'
+}
+
 # Parse options (before we need ASIMOV_ROOT).
+# Supports: --help, --version, --dry-run. Unknown options cause exit 1.
 ASIMOV_DRY_RUN=
 for arg in "$@"; do
-    if [[ "$arg" == --dry-run ]]; then
-        ASIMOV_DRY_RUN=1
-        break
-    fi
+    case "$arg" in
+        --dry-run) ASIMOV_DRY_RUN=1 ;;
+        --help)    print_usage; exit 0 ;;
+        --version) printf '%s\n' "$ASIMOV_VERSION"; exit 0 ;;
+        -*)
+            echo "asimov: unknown option '$arg'" >&2
+            echo "Usage: asimov [--dry-run] [--help] [--version]" >&2
+            exit 1
+            ;;
+    esac
 done
 readonly ASIMOV_DRY_RUN
 
@@ -156,9 +176,11 @@ readonly ASIMOV_FIXED_DIRS=(
 # Process newline-separated paths from stdin: for each path, check tmutil isexcluded,
 # then call tmutil addexclusion (unless ASIMOV_DRY_RUN is set); append size to ASIMOV_SIZE_LOG.
 # When ASIMOV_DRY_RUN is non-empty, only prints what would be excluded and does not call tmutil.
+# Skips paths that are not directories (e.g. disappeared between find and processing).
 exclude_paths_from_stdin() {
     local path
     while IFS=$'\n' read -r path; do
+        [[ -d "$path" ]] || continue
         if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
             local sizeondisk rawsize
             sizeondisk=$(du -hs "${path}" 2>/dev/null | cut -f1 || echo "?")
@@ -226,32 +248,38 @@ build_find_vendor_params() {
     done
 }
 
+# Format a size in KB as human-readable string (e.g. 1.2G, 500M, 42K).
+format_size_kb() {
+    local kb="$1"
+    if [[ "$kb" -ge ASIMOV_KB_PER_GB ]]; then
+        awk "BEGIN {printf \"%.1fG\", ${kb}/${ASIMOV_KB_PER_GB}}"
+    elif [[ "$kb" -ge ASIMOV_KB_PER_MB ]]; then
+        awk "BEGIN {printf \"%.1fM\", ${kb}/${ASIMOV_KB_PER_MB}}"
+    else
+        printf '%sK' "$kb"
+    fi
+}
+
 # Print summary of excluded (or would-exclude) count and total size from ASIMOV_SIZE_LOG.
 print_exclusion_summary() {
-    local excluded_count total_kb total_human
+    local excluded_count total_kb total_human msg
     excluded_count=$(wc -l < "$ASIMOV_SIZE_LOG" | tr -d ' ')
     if [[ "$excluded_count" -gt 0 ]]; then
         total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
-        if [[ "$total_kb" -ge ASIMOV_KB_PER_GB ]]; then
-            total_human="$(awk "BEGIN {printf \"%.1fG\", ${total_kb}/${ASIMOV_KB_PER_GB}}")"
-        elif [[ "$total_kb" -ge ASIMOV_KB_PER_MB ]]; then
-            total_human="$(awk "BEGIN {printf \"%.1fM\", ${total_kb}/${ASIMOV_KB_PER_MB}}")"
-        else
-            total_human="${total_kb}K"
-        fi
+        total_human="$(format_size_kb "$total_kb")"
         if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
-            printf '\n%sWould exclude %d directories, totalling %s.%s\n' \
-                "$ASIMOV_COLOR_SUCCESS" "$excluded_count" "$total_human" "$ASIMOV_COLOR_RESET"
+            msg="Would exclude ${excluded_count} directories, totalling ${total_human}."
         else
-            printf '\n%sDone! Excluded %d directories, totalling %s.%s\n' \
-                "$ASIMOV_COLOR_SUCCESS" "$excluded_count" "$total_human" "$ASIMOV_COLOR_RESET"
+            msg="Done! Excluded ${excluded_count} directories, totalling ${total_human}."
         fi
+        printf '\n%s%s%s\n' "$ASIMOV_COLOR_SUCCESS" "$msg" "$ASIMOV_COLOR_RESET"
     else
         if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
-            printf '\n%sNo directories would be excluded.%s\n' "$ASIMOV_COLOR_SUCCESS" "$ASIMOV_COLOR_RESET"
+            msg="No directories would be excluded."
         else
-            printf '\n%sDone! No new directories to exclude.%s\n' "$ASIMOV_COLOR_SUCCESS" "$ASIMOV_COLOR_RESET"
+            msg="Done! No new directories to exclude."
         fi
+        printf '\n%s%s%s\n' "$ASIMOV_COLOR_SUCCESS" "$msg" "$ASIMOV_COLOR_RESET"
     fi
 }
 

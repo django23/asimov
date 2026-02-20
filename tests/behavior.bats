@@ -287,12 +287,37 @@ load test_helper
 }
 
 # =============================================================================
+# --help, --version, unknown option
+# =============================================================================
+
+@test "help option prints usage and exits 0" {
+  run_asimov --help
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"asimov"* ]]
+  [[ "$output" == *"--dry-run"* ]]
+}
+
+@test "version option prints version and exits 0" {
+  run_asimov --version
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"0.3.0"* ]]
+}
+
+@test "unknown option exits 1 and prints error" {
+  run_asimov --unknown
+  [[ "$status" -eq 1 ]]
+  [[ "$output" == *"unknown option"* ]]
+  [[ "$output" == *"Usage:"* ]]
+}
+
+# =============================================================================
 # --dry-run
 # =============================================================================
 
 @test "dry-run prints would-exclude but does not call tmutil" {
   create_project "Code/My-Project" "package.json" "node_modules"
-  run "${BATS_TEST_DIRNAME}/../asimov" --dry-run
+  run_asimov --dry-run
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"Would exclude"* ]]
   [[ "$output" == *"node_modules"* ]]

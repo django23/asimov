@@ -32,9 +32,9 @@ create_project() {
   echo "sentinel" > "${HOME}/${base}/${sentinel}"
 }
 
-# Run the asimov script under test.
+# Run the asimov script under test. Pass any arguments (e.g. --dry-run, --help).
 run_asimov() {
-  run "${BATS_TEST_DIRNAME}/../asimov"
+  run "${BATS_TEST_DIRNAME}/../asimov" "$@"
 }
 
 # Return the number of exclusions recorded by the mock tmutil.

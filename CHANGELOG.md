@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+* `--help` and `--version` options; unknown options exit with an error and usage message
 * `--dry-run` option to print what would be excluded without calling `tmutil`
 * Support glob patterns in sentinel definitions, enabling wildcards like `*.xcodeproj` ([stevegrunwell/asimov#64], props @mdab121)
 * Exclude Xcode DerivedData when `*.xcodeproj` is present ([stevegrunwell/asimov#64], props @mdab121)
@@ -39,7 +40,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 * Use `ASIMOV_ROOT` in `ASIMOV_SKIP_PATHS` and `ASIMOV_FIXED_DIRS` so skip/fixed paths are correct when running as root (e.g. launchd)
-* Refactor: extract `resolve_asimov_root()`, `build_find_skip_params()`, `build_find_vendor_params()`, `print_exclusion_summary()`; rename `exclude_file` to `exclude_paths_from_stdin`; add named constants for size and colors
+* Refactor: extract `resolve_asimov_root()`, `build_find_skip_params()`, `build_find_vendor_params()`, `print_exclusion_summary()`, `format_size_kb()`; rename `exclude_file` to `exclude_paths_from_stdin`; add named constants for size and colors
+* Skip non-directory paths in `exclude_paths_from_stdin` (avoids failures if a path disappears between find and processing)
+* Use `printf` instead of `echo -e` in install/uninstall scripts for portability
 * Skip directories already excluded from Time Machine backups for faster subsequent runs (inspired by [stevegrunwell/asimov#97], props @VladRassokhin)
 * Migrated test suite from PHP/PHPUnit to [Bats](https://github.com/bats-core/bats-core) (Bash Automated Testing System), removing the PHP dependency for contributors
 * Replaced Travis CI pipeline with GitHub Actions (macOS 14 + 15 matrix)

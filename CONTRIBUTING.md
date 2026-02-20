@@ -28,6 +28,8 @@ make check
 
 To run a single test by name: `bats tests/behavior.bats --filter "substring of test name"` or `bats tests/sentinels.bats --filter "npm"`.
 
+The main script supports `--help`, `--version`, and `--dry-run`; unknown options exit with an error.
+
 ## Adding a new dependency pattern
 
 This is the most common type of contribution. To add a new ecosystem or dependency directory:
