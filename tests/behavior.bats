@@ -312,6 +312,7 @@ load test_helper
   [[ "$output" == *"Usage:"* ]]
   [[ "$output" == *"asimov"* ]]
   [[ "$output" == *"--dry-run"* ]]
+  [[ "$output" == *"--verbose"* ]]
 }
 
 @test "version option prints version and exits 0" {
@@ -326,6 +327,30 @@ load test_helper
   [[ "$status" -eq 1 ]]
   [[ "$output" == *"unknown option"* ]]
   [[ "$output" == *"Usage:"* ]]
+}
+
+# =============================================================================
+# --verbose
+# =============================================================================
+
+@test "default output hides already-excluded messages" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+
+  # Run again — directory is already excluded
+  run_asimov
+  [[ "$output" != *"already excluded"* ]]
+}
+
+@test "verbose shows already-excluded messages" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+
+  # Run again with --verbose
+  run_asimov --verbose
+  [[ "$output" == *"already excluded"* ]]
 }
 
 # =============================================================================

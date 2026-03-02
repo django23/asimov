@@ -24,12 +24,13 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 readonly ASIMOV_VERSION='0.4.2'
 
 print_usage() {
-    printf 'Usage: asimov [--dry-run] [--help] [--version]\n'
+    printf 'Usage: asimov [--dry-run] [--verbose] [--help] [--version]\n'
     printf '\n'
     printf 'Exclude development dependency directories from Time Machine backups.\n'
     printf '\n'
     printf 'Options:\n'
     printf '  --dry-run   Print what would be excluded without changing Time Machine\n'
+    printf '  --verbose   Show all directories including already-excluded ones\n'
     printf '  --help      Show this help and exit\n'
     printf '  --version   Show version and exit\n'
 }
@@ -37,9 +38,11 @@ print_usage() {
 # Parse options (before we need ASIMOV_ROOT).
 # Supports: --help, --version, --dry-run. Unknown options cause exit 1.
 ASIMOV_DRY_RUN=
+ASIMOV_VERBOSE=
 for arg in "$@"; do
     case "$arg" in
         --dry-run) ASIMOV_DRY_RUN=1 ;;
+        --verbose) ASIMOV_VERBOSE=1 ;;
         --help)    print_usage; exit 0 ;;
         --version) printf '%s\n' "$ASIMOV_VERSION"; exit 0 ;;
         -*)
@@ -50,6 +53,7 @@ for arg in "$@"; do
     esac
 done
 readonly ASIMOV_DRY_RUN
+readonly ASIMOV_VERBOSE
 
 # Named constants for size formatting.
 readonly ASIMOV_KB_PER_MB=1024
@@ -207,7 +211,7 @@ exclude_paths_from_stdin() {
         fi
 
         if tmutil isexcluded "${path}" | grep -Fq '[Excluded]'; then
-            echo "- ${path} is already excluded, skipping."
+            [[ -n "$ASIMOV_VERBOSE" ]] && echo "- ${path} is already excluded, skipping."
             continue
         fi
 
