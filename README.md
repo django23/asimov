@@ -99,7 +99,7 @@ make install
 
 This copies Asimov to `/usr/local/bin`, sets up a daily launchd schedule, and runs it immediately.
 
-> **Tip:** Edit `com.stevegrunwell.asimov.plist` before running `make install` to customize the schedule.
+> **Tip:** Edit `com.django23.asimov.plist` before running `make install` to customize the schedule.
 
 ### Uninstall
 

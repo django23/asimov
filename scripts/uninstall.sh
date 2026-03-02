@@ -11,7 +11,7 @@ source "$(pwd -P)/$(dirname "$0")/vars"
 printf '\n\033[0;36mRemoving command %s\033[0m\n' "${BIN}"
 [[ -f ${BIN} ]] && rm "${BIN}"
 
-if launchctl list | grep -q com.stevegrunwell.asimov; then
+if launchctl list | grep -q com.django23.asimov; then
   printf '\n\033[0;36mUnloading current instance of %s\033[0m\n' "${PLIST}"
   launchctl unload "${DIR}/${PLIST}"
 fi

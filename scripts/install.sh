@@ -21,7 +21,7 @@ if [[ "${NAME}" != "asimov" ]]; then
 fi
 
 # Ensure daemon is not already loaded.
-if launchctl list | grep -q com.stevegrunwell.asimov; then
+if launchctl list | grep -q com.django23.asimov; then
   printf '\n\033[0;36mUnloading current instance of %s\033[0m\n' "${PLIST}"
   launchctl unload "${DIR}/${PLIST}"
 fi
