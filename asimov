@@ -312,13 +312,15 @@ build_find_vendor_params() {
     # Process built-in sentinels, skipping any disabled by config
     for pair in "${ASIMOV_VENDOR_DIR_SENTINELS[@]}"; do
         local disabled=false
-        local dpair
-        for dpair in "${ASIMOV_CONFIG_DISABLED_SENTINELS[@]}"; do
-            if [[ "$pair" == "$dpair" ]]; then
-                disabled=true
-                break
-            fi
-        done
+        if [[ ${#ASIMOV_CONFIG_DISABLED_SENTINELS[@]} -gt 0 ]]; then
+            local dpair
+            for dpair in "${ASIMOV_CONFIG_DISABLED_SENTINELS[@]}"; do
+                if [[ "$pair" == "$dpair" ]]; then
+                    disabled=true
+                    break
+                fi
+            done
+        fi
         [[ "$disabled" == true ]] && continue
 
         read -ra parts <<< "${pair}"
@@ -341,7 +343,7 @@ build_find_vendor_params() {
     done
 
     # Append extra sentinels from config
-    for pair in "${ASIMOV_CONFIG_EXTRA_SENTINELS[@]}"; do
+    for pair in ${ASIMOV_CONFIG_EXTRA_SENTINELS[@]+"${ASIMOV_CONFIG_EXTRA_SENTINELS[@]}"}; do
         read -ra parts <<< "${pair}"
         dir_name="${parts[0]}"
         sentinel_name="${parts[1]}"
