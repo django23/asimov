@@ -10,6 +10,8 @@
 
 **Asimov automatically excludes development dependencies from macOS [Time Machine](https://support.apple.com/en-us/HT201250) backups.** It scans your home directory for known dependency directories (e.g. `node_modules/`, `vendor/`, `.venv/`), verifies that the corresponding config file exists alongside them, and tells Time Machine to skip them. No more wasting backup space on files you can restore with a single command.
 
+**Requirements:** macOS with Bash (e.g. macOS 14+).
+
 ## Quick start
 
 ```sh

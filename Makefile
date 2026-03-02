@@ -1,9 +1,20 @@
 .DEFAULT_GOAL := help
-.PHONY: help test lint check install uninstall exclusions
+.PHONY: help test lint check install uninstall exclusions version release release-beta
+
+## —————————— 🎵 Asimov 🎵 ————————————————————————————————————
+
+help: ## Show this help
+	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
+
+version: ## Print asimov version
+	@./asimov --version
+
+exclusions: ## List all paths excluded from Time Machine
+	@sudo mdfind "com_apple_backup_excludeItem = 'com.apple.backupd'"
 
 
-help: ## Outputs this help screen
-	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}'
+## —————————— 🛠 Development ———————————————————————————————————
+
 
 test: ## Run Bats tests
 	@bats tests/sentinels.bats tests/behavior.bats
@@ -13,11 +24,38 @@ lint: ## Run Shellcheck on all shell scripts
 
 check: test lint ## Run tests and linting
 
+
+## —————————— 📦 Installation ——————————————————————————————————
+
+
 install: ## Install Asimov and schedule via launchd
 	@scripts/install.sh
 
 uninstall: ## Uninstall Asimov and remove launchd schedule
 	@scripts/uninstall.sh
 
-exclusions: ## List all paths excluded from Time Machine
-	@sudo mdfind "com_apple_backup_excludeItem = 'com.apple.backupd'"
+
+## —————————— 🚀 Release ———————————————————————————————————————
+
+
+release: check ## Tag and push a stable release — GitHub Actions will create the release
+	@set -e; \
+	VERSION=$$(./asimov --version); \
+	TAG="v$$VERSION"; \
+	echo "Tagging $$TAG..."; \
+	git tag -a "$$TAG" -m "Release $$TAG"; \
+	git push origin "$$TAG"; \
+	echo "Tag $$TAG pushed — GitHub Actions will create the release."
+
+release-beta: check ## Tag and push a beta pre-release — GitHub Actions will create the pre-release
+	@set -e; \
+	VERSION=$$(./asimov --version); \
+	BETA_NUM=1; \
+	while git tag | grep -q "^v$$VERSION-beta\.$$BETA_NUM$$"; do \
+	  BETA_NUM=$$((BETA_NUM + 1)); \
+	done; \
+	TAG="v$$VERSION-beta.$$BETA_NUM"; \
+	echo "Tagging $$TAG..."; \
+	git tag -a "$$TAG" -m "Pre-release $$TAG"; \
+	git push origin "$$TAG"; \
+	echo "Tag $$TAG pushed — GitHub Actions will create the pre-release."

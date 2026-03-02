@@ -73,6 +73,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Removed PHP test infrastructure (`composer.json`, `phpunit.xml.dist`, and PHP test files)
 * Removed Travis CI configuration (`.travis.yml`)
 
+[0.4.0]: https://github.com/django23/asimov/compare/v0.3.0...v0.4.0
+
 ## [Version 0.3.0] — 2020-06-16
 
 ### Added
@@ -122,7 +124,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/stevegrunwell/asimov/compare/master...develop
+[Unreleased]: https://github.com/django23/asimov/compare/v0.4.0...improvements
 [stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10
 [stevegrunwell/asimov#15]: https://github.com/stevegrunwell/asimov/pull/15
 [stevegrunwell/asimov#16]: https://github.com/stevegrunwell/asimov/pull/16

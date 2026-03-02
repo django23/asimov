@@ -245,6 +245,8 @@ load test_helper
   create_project "Code/Project-B" "composer.json" "vendor"
   run_asimov
   [[ "$output" == *"Excluded 2 directories"* ]]
+  [[ "$output" == *"totalling"* ]]
+  [[ "$output" =~ totalling\ .*[KMG]\. ]]
 }
 
 @test "prints no-exclusion message when nothing to exclude" {
