@@ -17,7 +17,6 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 #
 # For a full explanation, please see https://apple.stackexchange.com/a/25833/206772
 #
-# @version 0.4.0
 # @author  Steve Grunwell
 # @license MIT
 
