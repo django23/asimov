@@ -256,9 +256,13 @@ build_find_vendor_params() {
 format_size_kb() {
     local kb="$1"
     if [[ "$kb" -ge ASIMOV_KB_PER_GB ]]; then
-        awk "BEGIN {printf \"%.1fG\", ${kb}/${ASIMOV_KB_PER_GB}}"
+        local whole=$((kb / ASIMOV_KB_PER_GB))
+        local frac=$(( (kb % ASIMOV_KB_PER_GB) * 10 / ASIMOV_KB_PER_GB ))
+        printf '%s.%sG' "$whole" "$frac"
     elif [[ "$kb" -ge ASIMOV_KB_PER_MB ]]; then
-        awk "BEGIN {printf \"%.1fM\", ${kb}/${ASIMOV_KB_PER_MB}}"
+        local whole=$((kb / ASIMOV_KB_PER_MB))
+        local frac=$(( (kb % ASIMOV_KB_PER_MB) * 10 / ASIMOV_KB_PER_MB ))
+        printf '%s.%sM' "$whole" "$frac"
     else
         printf '%sK' "$kb"
     fi
