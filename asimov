@@ -272,23 +272,24 @@ format_size_kb() {
 print_exclusion_summary() {
     local excluded_count total_kb total_human msg
     excluded_count=$(wc -l < "$ASIMOV_SIZE_LOG" | tr -d ' ')
-    if [[ "$excluded_count" -gt 0 ]]; then
-        total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
-        total_human="$(format_size_kb "$total_kb")"
-        if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
-            msg="Would exclude ${excluded_count} directories, totalling ${total_human}."
-        else
-            msg="Done! Excluded ${excluded_count} directories, totalling ${total_human}."
-        fi
-        printf '\n%s%s%s\n' "$ASIMOV_COLOR_SUCCESS" "$msg" "$ASIMOV_COLOR_RESET"
-    else
-        if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
+
+    if [[ "$excluded_count" -eq 0 ]]; then
+        if [[ -n "$ASIMOV_DRY_RUN" ]]; then
             msg="No directories would be excluded."
         else
             msg="Done! No new directories to exclude."
         fi
-        printf '\n%s%s%s\n' "$ASIMOV_COLOR_SUCCESS" "$msg" "$ASIMOV_COLOR_RESET"
+    else
+        total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
+        total_human="$(format_size_kb "$total_kb")"
+        if [[ -n "$ASIMOV_DRY_RUN" ]]; then
+            msg="Would exclude ${excluded_count} directories, totalling ${total_human}."
+        else
+            msg="Done! Excluded ${excluded_count} directories, totalling ${total_human}."
+        fi
     fi
+
+    printf '\n%s%s%s\n' "$ASIMOV_COLOR_SUCCESS" "$msg" "$ASIMOV_COLOR_RESET"
 }
 
 # --- Main: build find params, run find, process paths, then fixed dirs, then summary ---
