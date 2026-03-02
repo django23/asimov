@@ -259,7 +259,12 @@ load test_helper
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/node_modules"
 
-  # Run again — everything is already excluded
+  # Simulate mdfind reporting the already-excluded path (as real macOS would)
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  # Run again — everything is already excluded and pruned by mdfind
   run_asimov
   [[ "$output" == *"No new directories to exclude"* ]]
 }

@@ -31,7 +31,10 @@ case "$subcommand" in
         exit 1
       fi
     fi
-    printf '%s\n' "$path" >> "$ASIMOV_TEST_EXCLUSIONS"
+    # Idempotent: don't add if already present (matches real tmutil)
+    if ! grep -Fxq "$path" "$ASIMOV_TEST_EXCLUSIONS" 2>/dev/null; then
+      printf '%s\n' "$path" >> "$ASIMOV_TEST_EXCLUSIONS"
+    fi
     ;;
   *)
     echo "Unknown subcommand: $subcommand" >&2

@@ -18,6 +18,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Removed stale `@version` header comment; `ASIMOV_VERSION` is the single source of truth
 - Simplified `print_exclusion_summary()` to a single printf with early return
 - Removed unnecessary defensive guards on always-initialized variables
+- Per-path `tmutil isexcluded` check is now `--verbose`-only; mdfind already prunes excluded paths and `tmutil addexclusion` is idempotent, cutting ~30-50% of subprocess spawns per run
 
 ### Fixed
 

@@ -197,10 +197,11 @@ record_excluded_path() {
     echo "$rawsize" >> "$ASIMOV_SIZE_LOG"
 }
 
-# Process newline-separated paths from stdin: for each path, check tmutil isexcluded,
-# then call tmutil addexclusion (unless ASIMOV_DRY_RUN is set); append size to ASIMOV_SIZE_LOG.
-# When ASIMOV_DRY_RUN is non-empty, only prints what would be excluded and does not call tmutil.
-# Skips paths that are not directories (e.g. disappeared between find and processing).
+# Process newline-separated paths from stdin: check exclusion status,
+# call tmutil addexclusion (unless dry-run), and log sizes.
+# With --verbose, reports already-excluded paths.
+# Without --verbose, skips the isexcluded check — mdfind already pruned
+# most excluded paths, and tmutil addexclusion is idempotent.
 exclude_paths_from_stdin() {
     local path
     while IFS=$'\n' read -r path; do
@@ -210,9 +211,11 @@ exclude_paths_from_stdin() {
             continue
         fi
 
-        if tmutil isexcluded "${path}" | grep -Fq '[Excluded]'; then
-            [[ -n "$ASIMOV_VERBOSE" ]] && echo "- ${path} is already excluded, skipping."
-            continue
+        if [[ -n "$ASIMOV_VERBOSE" ]]; then
+            if tmutil isexcluded "${path}" | grep -Fq '[Excluded]'; then
+                echo "- ${path} is already excluded, skipping."
+                continue
+            fi
         fi
 
         if ! tmutil addexclusion "${path}" 2>/dev/null; then
