@@ -315,9 +315,10 @@ load test_helper
 }
 
 @test "version option prints version and exits 0" {
+  expected_version="$(grep '^readonly ASIMOV_VERSION=' "${BATS_TEST_DIRNAME}/../asimov" | cut -d"'" -f2)"
   run_asimov --version
   [[ "$status" -eq 0 ]]
-  [[ "$output" == *"0.4.1"* ]]
+  [[ "$output" == *"$expected_version"* ]]
 }
 
 @test "unknown option exits 1 and prints error" {
