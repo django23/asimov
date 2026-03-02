@@ -17,7 +17,7 @@ exclusions: ## List all paths excluded from Time Machine
 
 
 test: ## Run Bats tests
-	@bats tests/sentinels.bats tests/behavior.bats
+	@bats tests/sentinels.bats tests/behavior.bats tests/plist.bats
 
 lint: ## Run Shellcheck on all shell scripts
 	@shellcheck asimov scripts/install.sh scripts/uninstall.sh tests/test_helper.bash tests/bin/run-tests.sh tests/bin/tmutil tests/bin/mdfind
@@ -28,11 +28,13 @@ check: test lint ## Run tests and linting
 ## —————————— 📦 Installation ——————————————————————————————————
 
 
-install: ## Install Asimov and schedule via launchd
-	@scripts/install.sh
+NAME ?= asimov
 
-uninstall: ## Uninstall Asimov and remove launchd schedule
-	@scripts/uninstall.sh
+install: ## Install Asimov and schedule via launchd (NAME=asimov2 to install under a different name for testing)
+	@NAME=$(NAME) scripts/install.sh
+
+uninstall: ## Uninstall Asimov and remove launchd schedule (NAME=asimov2 to remove a non-default install)
+	@NAME=$(NAME) scripts/uninstall.sh
 
 
 ## —————————— 🚀 Release ———————————————————————————————————————

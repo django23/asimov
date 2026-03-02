@@ -1,3 +1,4 @@
 DIR="$(pwd -P)"
-BIN="/usr/local/bin/asimov"
+NAME="${NAME:-asimov}"
+BIN="/usr/local/bin/${NAME}"
 PLIST="com.stevegrunwell.asimov.plist"

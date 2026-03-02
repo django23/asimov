@@ -15,6 +15,11 @@ chmod +x "${DIR}/asimov"
 printf '\033[0;36mInstalling to %s\033[0m\n' "${BIN}"
 cp -a "${DIR}/asimov" "${BIN}"
 
+if [[ "${NAME}" != "asimov" ]]; then
+  printf '\n\033[0;32mInstalled as %s (skipping launchd — plist targets the default name).\033[0m\n' "${BIN}"
+  exit 0
+fi
+
 # Ensure daemon is not already loaded.
 if launchctl list | grep -q com.stevegrunwell.asimov; then
   printf '\n\033[0;36mUnloading current instance of %s\033[0m\n' "${PLIST}"
