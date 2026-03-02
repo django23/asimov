@@ -7,7 +7,7 @@ Thanks for your interest in contributing! Asimov is a small, focused project and
 **Prerequisites:** macOS with [Homebrew](https://brew.sh) installed.
 
 ```sh
-git clone https://github.com/stevegrunwell/asimov.git
+git clone https://github.com/django23/asimov.git
 cd asimov
 brew install bats-core shellcheck
 ```
@@ -31,7 +31,7 @@ make check
 
 To run a single test by name: `bats tests/behavior.bats --filter "substring of test name"` or `bats tests/sentinels.bats --filter "npm"`.
 
-The main script supports `--help`, `--version`, and `--dry-run`; unknown options exit with an error.
+The main script supports `--help`, `--version`, `--dry-run`, `--verbose`, and `--quiet`; unknown options exit with an error.
 
 ## Adding a new dependency pattern
 
@@ -86,14 +86,18 @@ asimov                  # Main bash script
 tests/
   sentinels.bats        # Tests for each dependency pattern
   behavior.bats         # Tests for edge cases and general behavior
+  format.bats           # Unit tests for format_size_kb()
+  plist.bats            # Tests for the LaunchAgent plist
   test_helper.bash      # Shared setup/teardown and assertions
   bin/tmutil            # Mock tmutil for testing
+  bin/mdfind            # Mock mdfind for testing
 scripts/
-  install.sh            # Installation script
+  install.sh            # Local installation script
+  install-remote.sh     # Curl-based remote installer
   uninstall.sh          # Uninstallation script
 Makefile                # Build targets (test, lint, check, install, uninstall)
 ```
 
 ## Questions?
 
-Open an [issue](https://github.com/stevegrunwell/asimov/issues) — happy to help.
+Open an [issue](https://github.com/django23/asimov/issues) — happy to help.
