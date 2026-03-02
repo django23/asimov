@@ -101,6 +101,56 @@ resolve_asimov_root() {
 ASIMOV_ROOT="$(resolve_asimov_root)"
 readonly ASIMOV_ROOT
 
+# Load optional config from ~/.config/asimov/config.
+# Populates ASIMOV_CONFIG_* variables. Missing file is silently ignored.
+load_config() {
+    local config_file="${ASIMOV_ROOT}/.config/asimov/config"
+
+    ASIMOV_CONFIG_FIXED_DIRS_ENABLED=false
+    ASIMOV_CONFIG_EXTRA_FIXED_DIRS=()
+    ASIMOV_CONFIG_EXTRA_SENTINELS=()
+    ASIMOV_CONFIG_DISABLED_SENTINELS=()
+
+    [[ -f "$config_file" ]] || return 0
+
+    local section="" line key value
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%%#*}"
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        [[ -z "$line" ]] && continue
+
+        if [[ "$line" =~ ^\[([a-z_]+)\]$ ]]; then
+            section="${BASH_REMATCH[1]}"
+            continue
+        fi
+
+        if [[ "$line" =~ ^([a-z_]+)[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            value="${value%"${value##*[![:space:]]}"}"
+
+            case "${section}:${key}" in
+                fixed_dirs:enabled)
+                    ASIMOV_CONFIG_FIXED_DIRS_ENABLED="$value"
+                    ;;
+                fixed_dirs:extra)
+                    value="${value/#\~/$HOME}"
+                    ASIMOV_CONFIG_EXTRA_FIXED_DIRS+=("$value")
+                    ;;
+                sentinels:extra)
+                    ASIMOV_CONFIG_EXTRA_SENTINELS+=("$value")
+                    ;;
+                sentinels:disabled)
+                    ASIMOV_CONFIG_DISABLED_SENTINELS+=("$value")
+                    ;;
+            esac
+        fi
+    done < "$config_file"
+}
+
+load_config
+
 # Paths to unconditionally skip over. This prevents Asimov from modifying the
 # Time Machine exclusions for these paths (and descendants). It has an important
 # side-effect of speeding up the search.
@@ -253,11 +303,45 @@ build_find_skip_params() {
 }
 
 # Build find parameters for all directory/sentinel pairs.
+# Skips pairs disabled via config and appends extra pairs from config.
 # Result is stored in global find_parameters_vendor.
 build_find_vendor_params() {
     find_parameters_vendor=()
     local pair parts dir_name sentinel_name sentinel_check
+
+    # Process built-in sentinels, skipping any disabled by config
     for pair in "${ASIMOV_VENDOR_DIR_SENTINELS[@]}"; do
+        local disabled=false
+        local dpair
+        for dpair in "${ASIMOV_CONFIG_DISABLED_SENTINELS[@]}"; do
+            if [[ "$pair" == "$dpair" ]]; then
+                disabled=true
+                break
+            fi
+        done
+        [[ "$disabled" == true ]] && continue
+
+        read -ra parts <<< "${pair}"
+        dir_name="${parts[0]}"
+        sentinel_name="${parts[1]}"
+
+        if [[ "$sentinel_name" == *'*'* ]]; then
+            sentinel_check=( -execdir sh -c 'ls -d '"${sentinel_name}"' >/dev/null 2>&1' \; )
+        else
+            sentinel_check=( -execdir test -e "${sentinel_name}" \; )
+        fi
+
+        find_parameters_vendor+=( -or \( \
+            -type d \
+            -name "${dir_name}" \
+            "${sentinel_check[@]}" \
+            -prune \
+            -print \
+        \) )
+    done
+
+    # Append extra sentinels from config
+    for pair in "${ASIMOV_CONFIG_EXTRA_SENTINELS[@]}"; do
         read -ra parts <<< "${pair}"
         dir_name="${parts[0]}"
         sentinel_name="${parts[1]}"
@@ -336,12 +420,27 @@ build_find_vendor_params
 find "${ASIMOV_ROOT}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
     | exclude_paths_from_stdin
 
-[[ -z "$ASIMOV_QUIET" ]] && printf '\n%sExcluding known cache directories…%s\n' "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
-for fixed_dir in "${ASIMOV_FIXED_DIRS[@]}"; do
-    if [[ -d "$fixed_dir" ]]; then
-        echo "$fixed_dir"
-    fi
-done | exclude_paths_from_stdin
+# Exclude built-in fixed dirs only when enabled via config.
+if [[ "$ASIMOV_CONFIG_FIXED_DIRS_ENABLED" == "true" ]]; then
+    [[ -z "$ASIMOV_QUIET" ]] && printf '\n%sExcluding known cache directories…%s\n' \
+        "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
+    for fixed_dir in "${ASIMOV_FIXED_DIRS[@]}"; do
+        if [[ -d "$fixed_dir" ]]; then
+            echo "$fixed_dir"
+        fi
+    done | exclude_paths_from_stdin
+fi
+
+# Always process extra fixed dirs from config (user explicitly wants them).
+if [[ ${#ASIMOV_CONFIG_EXTRA_FIXED_DIRS[@]} -gt 0 ]]; then
+    [[ -z "$ASIMOV_QUIET" ]] && printf '\n%sExcluding user-configured directories…%s\n' \
+        "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
+    for fixed_dir in "${ASIMOV_CONFIG_EXTRA_FIXED_DIRS[@]}"; do
+        if [[ -d "$fixed_dir" ]]; then
+            echo "$fixed_dir"
+        fi
+    done | exclude_paths_from_stdin
+fi
 
 [[ -z "$ASIMOV_QUIET" ]] && print_exclusion_summary
 exit 0

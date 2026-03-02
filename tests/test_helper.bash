@@ -66,6 +66,18 @@ refute_excluded() {
   fi
 }
 
+# Write a config file for testing.
+#
+# Usage: write_config "config file contents"
+#
+# Example: write_config "[fixed_dirs]
+# enabled = true"
+write_config() {
+    local config_dir="${HOME}/.config/asimov"
+    mkdir -p "$config_dir"
+    printf '%s\n' "$1" > "${config_dir}/config"
+}
+
 # Load format_size_kb and its constants for unit testing.
 # Extracts just the constants and function from the main script
 # without executing the rest of the script.

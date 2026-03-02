@@ -198,23 +198,34 @@ load test_helper
 # Fixed directories (global caches)
 # =============================================================================
 
-@test "excludes fixed directory when it exists" {
+@test "does not exclude fixed directories by default (no config)" {
   mkdir -p "${HOME}/.cache"
+  run_asimov
+  refute_excluded "${HOME}/.cache"
+}
+
+@test "excludes fixed directory when config enables them" {
+  mkdir -p "${HOME}/.cache"
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   assert_excluded "${HOME}/.cache"
 }
 
 @test "does not fail when fixed directory does not exist" {
-  # Don't create any fixed dirs — asimov should still succeed
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   [[ "$status" -eq 0 ]]
   [[ "$(count_exclusions)" -eq 0 ]]
 }
 
-@test "excludes multiple fixed directories when they exist" {
+@test "excludes multiple fixed directories when config enables them" {
   mkdir -p "${HOME}/.cache"
   mkdir -p "${HOME}/.gradle/caches"
   mkdir -p "${HOME}/.npm/_cacache"
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   assert_excluded "${HOME}/.cache"
   assert_excluded "${HOME}/.gradle/caches"
@@ -224,6 +235,8 @@ load test_helper
 
 @test "does not re-exclude already excluded fixed directory" {
   mkdir -p "${HOME}/.cache"
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   assert_excluded "${HOME}/.cache"
   local first_count
@@ -234,6 +247,73 @@ load test_helper
   local second_count
   second_count="$(count_exclusions)"
   [[ "$second_count" -eq 1 ]]
+}
+
+# =============================================================================
+# Config file
+# =============================================================================
+
+@test "config: missing config file is silently ignored" {
+  run_asimov
+  [[ "$status" -eq 0 ]]
+}
+
+@test "config: unknown section is silently ignored" {
+  write_config "[unknown_section]
+foo = bar"
+  run_asimov
+  [[ "$status" -eq 0 ]]
+}
+
+@test "config: unknown key is silently ignored" {
+  write_config "[fixed_dirs]
+unknown_key = value"
+  run_asimov
+  [[ "$status" -eq 0 ]]
+}
+
+@test "config: extra fixed dir is excluded" {
+  mkdir -p "${HOME}/.custom-cache"
+  write_config "[fixed_dirs]
+extra = ~/.custom-cache"
+  run_asimov
+  assert_excluded "${HOME}/.custom-cache"
+}
+
+@test "config: extra fixed dir is excluded even when fixed_dirs disabled" {
+  mkdir -p "${HOME}/.custom-cache"
+  write_config "[fixed_dirs]
+enabled = false
+extra = ~/.custom-cache"
+  run_asimov
+  assert_excluded "${HOME}/.custom-cache"
+}
+
+@test "config: multiple extra fixed dirs" {
+  mkdir -p "${HOME}/.cache-a"
+  mkdir -p "${HOME}/.cache-b"
+  write_config "[fixed_dirs]
+extra = ~/.cache-a
+extra = ~/.cache-b"
+  run_asimov
+  assert_excluded "${HOME}/.cache-a"
+  assert_excluded "${HOME}/.cache-b"
+}
+
+@test "config: extra sentinel pair triggers exclusion" {
+  create_project "Code/My-Project" "custom.config" ".custom-deps"
+  write_config "[sentinels]
+extra = .custom-deps custom.config"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.custom-deps"
+}
+
+@test "config: disabled sentinel pair is skipped" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  write_config "[sentinels]
+disabled = node_modules package.json"
+  run_asimov
+  refute_excluded "${HOME}/Code/My-Project/node_modules"
 }
 
 # =============================================================================
