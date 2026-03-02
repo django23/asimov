@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - `--verbose` flag to show already-excluded directories (hidden by default to reduce log noise)
+- Curl-based installer (`scripts/install-remote.sh`) for non-Homebrew users; installs to `~/.local/bin` and sets up a daily launchd schedule
 
 ### Changed
 
