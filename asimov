@@ -51,12 +51,20 @@ for arg in "$@"; do
 done
 readonly ASIMOV_DRY_RUN
 
-# Named constants for size formatting and output.
+# Named constants for size formatting.
 readonly ASIMOV_KB_PER_MB=1024
 readonly ASIMOV_KB_PER_GB=1048576
-readonly ASIMOV_COLOR_INFO=$'\033[0;36m'
-readonly ASIMOV_COLOR_SUCCESS=$'\033[0;32m'
-readonly ASIMOV_COLOR_RESET=$'\033[0m'
+
+# Disable colors when stdout is not a terminal (e.g. launchd, pipes, redirects).
+if [[ -t 1 ]]; then
+    readonly ASIMOV_COLOR_INFO=$'\033[0;36m'
+    readonly ASIMOV_COLOR_SUCCESS=$'\033[0;32m'
+    readonly ASIMOV_COLOR_RESET=$'\033[0m'
+else
+    readonly ASIMOV_COLOR_INFO=''
+    readonly ASIMOV_COLOR_SUCCESS=''
+    readonly ASIMOV_COLOR_RESET=''
+fi
 
 # Resolve the root directory to scan (console user's home when running as root).
 resolve_asimov_root() {
