@@ -193,7 +193,7 @@ exclude_paths_from_stdin() {
     local path
     while IFS=$'\n' read -r path; do
         [[ -d "$path" ]] || continue
-        if [[ -n "${ASIMOV_DRY_RUN:-}" ]]; then
+        if [[ -n "$ASIMOV_DRY_RUN" ]]; then
             record_excluded_path "$path" "Would exclude: ${path} (%s)."
             continue
         fi
