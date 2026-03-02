@@ -65,3 +65,10 @@ refute_excluded() {
     return 1
   fi
 }
+
+# Load format_size_kb and its constants for unit testing.
+# Extracts just the constants and function from the main script
+# without executing the rest of the script.
+load_format_size_kb() {
+    eval "$(awk '/^readonly ASIMOV_KB_PER/; /^format_size_kb\(\)/,/^}/' "${BATS_TEST_DIRNAME}/../asimov")"
+}
