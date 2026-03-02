@@ -1,49 +1,70 @@
-# Asimov
+# asimov
 
-[![Tests](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/stevegrunwell/asimov/actions/workflows/tests.yml)
-[![Homebrew](https://img.shields.io/badge/homebrew-available-orange?logo=homebrew&logoColor=white)](https://formulae.brew.sh/formula/asimov)
+Exclude development dependencies from Time Machine backups. Automatically.
+
+[![Tests](https://github.com/django23/asimov/actions/workflows/tests.yml/badge.svg)](https://github.com/django23/asimov/actions/workflows/tests.yml)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT201250)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 [![Shell: Bash](https://img.shields.io/badge/shell-bash-4EAA25?logo=gnubash&logoColor=white)](asimov)
 
-> Those people who think they know everything are a great annoyance to those of us who do.<br>— Isaac Asimov
+Asimov scans your home directory for known dependency directories (`node_modules/`, `vendor/`, `.venv/`, etc.), verifies the corresponding config file exists, and tells Time Machine to skip them. No more wasting backup space on files you can restore with a single command.
 
-**Asimov automatically excludes development dependencies from macOS [Time Machine](https://support.apple.com/en-us/HT201250) backups.** It scans your home directory for known dependency directories (e.g. `node_modules/`, `vendor/`, `.venv/`), verifies that the corresponding config file exists alongside them, and tells Time Machine to skip them. No more wasting backup space on files you can restore with a single command.
+## Install
 
-**Requirements:** macOS with Bash (e.g. macOS 14+).
-
-## Quick start
+**Homebrew:**
 
 ```sh
-brew install asimov
-sudo brew services start asimov   # run daily via launchd
+brew install django23/tap/asimov
 ```
 
-That's it. Asimov will now run once a day and exclude any dependency directories it finds.
-
-To run on-demand instead:
+**Or with curl (no Homebrew required):**
 
 ```sh
-asimov
+curl -fsSL https://raw.githubusercontent.com/django23/asimov/main/scripts/install-remote.sh | bash
 ```
 
-To see what would be excluded without changing Time Machine (dry run):
+**Or manually:**
 
 ```sh
-asimov --dry-run
+git clone https://github.com/django23/asimov.git --depth 1
+cd asimov
+make install
 ```
 
-Use `asimov --help` for options and `asimov --version` for the version.
+## Schedule
 
-| Option      | Description |
-| ----------- | ----------- |
+Set up a daily launchd job so asimov runs automatically:
+
+```sh
+# Homebrew users:
+brew services start django23/tap/asimov
+
+# Manual/curl installs (already set up by the installer):
+launchctl load ~/Library/LaunchAgents/com.django23.asimov.plist
+```
+
+Or run on demand: `asimov`
+
+## Usage
+
+```
+asimov [--dry-run] [--verbose] [--quiet] [--help] [--version]
+```
+
+| Option | Description |
+|---|---|
 | `--dry-run` | Print what would be excluded without changing Time Machine |
-| `--help`    | Show usage and options, then exit |
-| `--version` | Show version and exit |
+| `--verbose` | Show all directories including already-excluded ones |
+| `--quiet` | Suppress all output except errors |
 
-## Supported ecosystems
+## What it does
 
-Asimov recognizes dependency directories across **30+ patterns** in these ecosystems:
+Asimov pairs each dependency directory with a "sentinel" config file. A directory is only excluded if its sentinel exists — `node_modules` requires `package.json`, `vendor` requires `composer.json` or `go.mod`, and so on. This prevents false positives on directories that happen to share a common name.
+
+Optionally, asimov can also exclude well-known global caches (`~/.cache`, `~/.gradle/caches`, etc.) when enabled via the config file.
+
+<details>
+<summary><strong>Supported ecosystems (30+ patterns)</strong></summary>
 
 | Ecosystem | Directories excluded |
 |---|---|
@@ -55,7 +76,7 @@ Asimov recognizes dependency directories across **30+ patterns** in these ecosys
 | **Ruby** | `vendor` |
 | **Java / Kotlin / Scala** | `.gradle`, `build`, `target` |
 | **.NET (C# / F#)** | `bin`, `obj` |
-| **Swift / Apple** | `.build`, `Carthage`, `Pods` |
+| **Swift / Apple** | `.build`, `Carthage`, `Pods`, `DerivedData` |
 | **Dart / Flutter** | `.dart_tool`, `.packages`, `build` |
 | **Elixir** | `deps`, `_build`, `.build` |
 | **Clojure** | `target`, `.cpcache`, `.shadow-cljs` |
@@ -65,74 +86,55 @@ Asimov recognizes dependency directories across **30+ patterns** in these ecosys
 | **R** | `renv` |
 | **DevOps / IaC** | `.terraform`, `.terragrunt-cache`, `.vagrant`, `.direnv`, `cdk.out` |
 | **Game dev** | `.godot` |
-| **Global caches** | `~/.cache`, `~/.gradle/caches`, `~/.m2/repository`, `~/.npm/_cacache`, `~/.nuget/packages`, `~/.kube/cache` |
+| **Global caches** (opt-in) | `~/.cache`, `~/.gradle/caches`, `~/.m2/repository`, `~/.npm/_cacache`, `~/.nuget/packages`, `~/.kube/cache` |
 
-Each directory is only excluded when its corresponding config file (the "sentinel") exists — so `node_modules` is only excluded if `package.json` is present, `vendor` only if `composer.json`, `go.mod`, or `Gemfile` exists, etc.
+</details>
 
-## Installation
+## Configuration
 
-### Homebrew (recommended)
+Asimov reads an optional config file at `~/.config/asimov/config`:
 
-```sh
-brew install asimov
+```ini
+[fixed_dirs]
+# Enable global cache exclusions (default: false)
+enabled = true
+
+# Add your own always-exclude paths
+extra = ~/my-build-cache
+
+[sentinels]
+# Add custom dependency patterns
+extra = .custom-deps custom.config
+
+# Disable a built-in pattern
+disabled = vendor Gemfile
 ```
 
-For the latest development version:
+No config file needed for the default sentinel-based behavior.
+
+## Upgrading
+
+See [UPGRADING.md](UPGRADING.md) for migration instructions from v0.4.x or from the [original asimov](https://github.com/stevegrunwell/asimov).
+
+## Uninstall
 
 ```sh
-brew install asimov --head
-```
-
-Schedule Asimov to run daily:
-
-```sh
-sudo brew services start asimov
-```
-
-### Manual
-
-```sh
-git clone https://github.com/stevegrunwell/asimov.git --depth 1
-cd asimov
-make install
-```
-
-This copies Asimov to `/usr/local/bin`, sets up a daily launchd schedule, and runs it immediately.
-
-> **Tip:** Edit `com.django23.asimov.plist` before running `make install` to customize the schedule.
-
-### Uninstall
-
-```sh
-make uninstall     # manual installations
+brew uninstall asimov                    # Homebrew
 # or
-brew uninstall asimov
+rm ~/.local/bin/asimov                   # curl install
+launchctl unload ~/Library/LaunchAgents/com.django23.asimov.plist
+# or
+make uninstall                           # manual install
 ```
 
-## How it works
+## Credits
 
-Asimov is a thin wrapper around Apple's [`tmutil`](https://ss64.com/mac/tmutil.html). It builds a single `find` command from all known dependency patterns, walks your home directory (skipping `~/Library` and `~/.Trash`), and pipes matching paths through `tmutil addexclusion`. It also unconditionally excludes well-known global tool caches (like `~/.cache`, `~/.gradle/caches`, and `~/.npm/_cacache`) that can always be safely restored. Directories already excluded are skipped automatically — safe to run as often as you like.
-
-> **Note:** Asimov only excludes directories from Time Machine backups. It does not affect Spotlight indexing. To prevent Spotlight from indexing a directory, add it to the Privacy tab in System Settings > Spotlight (or Siri & Spotlight on newer macOS versions).
-
-### Inspecting exclusions
-
-List everything excluded from Time Machine:
-
-```sh
-make exclusions
-```
-
-Remove an exclusion added in error:
-
-```sh
-tmutil removeexclusion /path/to/directory
-```
+Asimov was originally created by [Steve Grunwell](https://github.com/stevegrunwell/asimov). This fork is actively maintained at [django23/asimov](https://github.com/django23/asimov) with performance improvements, config file support, and expanded ecosystem coverage.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, guidelines, and how to add new dependency patterns.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines.
 
 ## License
 
-[MIT](LICENSE.txt) — Steve Grunwell
+[MIT](LICENSE.txt)
