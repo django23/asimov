@@ -8,7 +8,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- `--verbose` flag to show already-excluded directories (hidden by default to reduce log noise)
+
 ### Changed
+
+- Colors are now disabled when stdout is not a terminal (e.g. launchd, pipes)
+- `record_excluded_path()` calls `du` once instead of twice per path (performance)
+- `format_size_kb()` uses bash arithmetic instead of spawning `awk`
+- Removed stale `@version` header comment; `ASIMOV_VERSION` is the single source of truth
+- Simplified `print_exclusion_summary()` to a single printf with early return
+- Removed unnecessary defensive guards on always-initialized variables
 
 ### Fixed
 
