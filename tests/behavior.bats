@@ -318,6 +318,7 @@ load test_helper
   [[ "$output" == *"asimov"* ]]
   [[ "$output" == *"--dry-run"* ]]
   [[ "$output" == *"--verbose"* ]]
+  [[ "$output" == *"--quiet"* ]]
 }
 
 @test "version option prints version and exits 0" {
@@ -356,6 +357,36 @@ load test_helper
   # Run again with --verbose
   run_asimov --verbose
   [[ "$output" == *"already excluded"* ]]
+}
+
+# =============================================================================
+# --quiet
+# =============================================================================
+
+@test "quiet mode suppresses all non-error output" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --quiet
+  [[ "$status" -eq 0 ]]
+  [[ -z "$output" ]]
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+}
+
+@test "quiet mode still shows errors on stderr" {
+  create_project "Code/Bad-Project" "package.json" "node_modules"
+
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="${TEST_TEMP_DIR}/.tmutil_fail_paths"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/Bad-Project/node_modules" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov --quiet
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"failed to exclude"* ]]
+}
+
+@test "quiet and verbose together exits with error" {
+  run_asimov --quiet --verbose
+  [[ "$status" -eq 1 ]]
+  [[ "$output" == *"mutually exclusive"* ]]
 }
 
 # =============================================================================

@@ -24,25 +24,28 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 readonly ASIMOV_VERSION='0.4.2'
 
 print_usage() {
-    printf 'Usage: asimov [--dry-run] [--verbose] [--help] [--version]\n'
+    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [--help] [--version]\n'
     printf '\n'
     printf 'Exclude development dependency directories from Time Machine backups.\n'
     printf '\n'
     printf 'Options:\n'
     printf '  --dry-run   Print what would be excluded without changing Time Machine\n'
     printf '  --verbose   Show all directories including already-excluded ones\n'
+    printf '  --quiet     Suppress all output except errors\n'
     printf '  --help      Show this help and exit\n'
     printf '  --version   Show version and exit\n'
 }
 
 # Parse options (before we need ASIMOV_ROOT).
-# Supports: --help, --version, --dry-run, --verbose. Unknown options cause exit 1.
+# Supports: --help, --version, --dry-run, --verbose, --quiet. Unknown options cause exit 1.
 ASIMOV_DRY_RUN=
 ASIMOV_VERBOSE=
+ASIMOV_QUIET=
 for arg in "$@"; do
     case "$arg" in
         --dry-run) ASIMOV_DRY_RUN=1 ;;
         --verbose) ASIMOV_VERBOSE=1 ;;
+        --quiet)   ASIMOV_QUIET=1 ;;
         --help)    print_usage; exit 0 ;;
         --version) printf '%s\n' "$ASIMOV_VERSION"; exit 0 ;;
         -*)
@@ -54,6 +57,12 @@ for arg in "$@"; do
 done
 readonly ASIMOV_DRY_RUN
 readonly ASIMOV_VERBOSE
+readonly ASIMOV_QUIET
+
+if [[ -n "$ASIMOV_QUIET" && -n "$ASIMOV_VERBOSE" ]]; then
+    echo "asimov: --quiet and --verbose are mutually exclusive" >&2
+    exit 1
+fi
 
 # Named constants for size formatting.
 readonly ASIMOV_KB_PER_MB=1024
@@ -191,9 +200,11 @@ record_excluded_path() {
     local message_tpl="$2"
     local rawsize size_human line
     rawsize=$(du -sk "${path}" 2>/dev/null | cut -f1 || echo "0")
-    size_human="$(format_size_kb "$rawsize")"
-    line="- ${message_tpl//%s/$size_human}"
-    printf '%s\n' "$line"
+    if [[ -z "$ASIMOV_QUIET" ]]; then
+        size_human="$(format_size_kb "$rawsize")"
+        line="- ${message_tpl//%s/$size_human}"
+        printf '%s\n' "$line"
+    fi
     echo "$rawsize" >> "$ASIMOV_SIZE_LOG"
 }
 
@@ -319,18 +330,18 @@ build_find_vendor_params
 
 # Find all directories matching a sentinel pair under ASIMOV_ROOT, excluding skip paths
 # and already-excluded trees; pipe to exclude_paths_from_stdin.
-printf '\n%sFinding dependency directories with corresponding definition files…%s\n' \
+[[ -z "$ASIMOV_QUIET" ]] && printf '\n%sFinding dependency directories with corresponding definition files…%s\n' \
     "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
 
 find "${ASIMOV_ROOT}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
     | exclude_paths_from_stdin
 
-printf '\n%sExcluding known cache directories…%s\n' "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
+[[ -z "$ASIMOV_QUIET" ]] && printf '\n%sExcluding known cache directories…%s\n' "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
 for fixed_dir in "${ASIMOV_FIXED_DIRS[@]}"; do
     if [[ -d "$fixed_dir" ]]; then
         echo "$fixed_dir"
     fi
 done | exclude_paths_from_stdin
 
-print_exclusion_summary
+[[ -z "$ASIMOV_QUIET" ]] && print_exclusion_summary
 exit 0
