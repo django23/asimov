@@ -317,7 +317,7 @@ load test_helper
 @test "version option prints version and exits 0" {
   run_asimov --version
   [[ "$status" -eq 0 ]]
-  [[ "$output" == *"0.4.0"* ]]
+  [[ "$output" == *"0.4.1"* ]]
 }
 
 @test "unknown option exits 1 and prints error" {
