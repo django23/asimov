@@ -36,7 +36,7 @@ print_usage() {
 }
 
 # Parse options (before we need ASIMOV_ROOT).
-# Supports: --help, --version, --dry-run. Unknown options cause exit 1.
+# Supports: --help, --version, --dry-run, --verbose. Unknown options cause exit 1.
 ASIMOV_DRY_RUN=
 ASIMOV_VERBOSE=
 for arg in "$@"; do
