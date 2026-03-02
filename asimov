@@ -177,10 +177,10 @@ readonly ASIMOV_FIXED_DIRS=(
 record_excluded_path() {
     local path="$1"
     local message_tpl="$2"
-    local sizeondisk rawsize line
-    sizeondisk=$(du -hs "${path}" 2>/dev/null | cut -f1 || echo "?")
+    local rawsize size_human line
     rawsize=$(du -sk "${path}" 2>/dev/null | cut -f1 || echo "0")
-    line="- ${message_tpl//%s/$sizeondisk}"
+    size_human="$(format_size_kb "$rawsize")"
+    line="- ${message_tpl//%s/$size_human}"
     printf '%s\n' "$line"
     echo "$rawsize" >> "$ASIMOV_SIZE_LOG"
 }
