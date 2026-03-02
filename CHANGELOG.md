@@ -8,22 +8,44 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- `--verbose` flag to show already-excluded directories (hidden by default to reduce log noise)
-- Curl-based installer (`scripts/install-remote.sh`) for non-Homebrew users; installs to `~/.local/bin` and sets up a daily launchd schedule
-
 ### Changed
-
-- Colors are now disabled when stdout is not a terminal (e.g. launchd, pipes)
-- `record_excluded_path()` calls `du` once instead of twice per path (performance)
-- `format_size_kb()` uses bash arithmetic instead of spawning `awk`
-- Removed stale `@version` header comment; `ASIMOV_VERSION` is the single source of truth
-- Simplified `print_exclusion_summary()` to a single printf with early return
-- Removed unnecessary defensive guards on always-initialized variables
-- Per-path `tmutil isexcluded` check is now `--verbose`-only; mdfind already prunes excluded paths and `tmutil addexclusion` is idempotent, cutting ~30-50% of subprocess spawns per run
 
 ### Fixed
 
 ### Removed
+
+## [0.5.0] — 2026-03-02
+
+### Added
+
+- `--quiet` flag to suppress all non-error output
+- `--verbose` flag to show already-excluded directories (hidden by default)
+- Config file support (`~/.config/asimov/config`) for enabling fixed dirs, adding extra dirs/sentinels, and disabling built-in sentinels
+- Curl-based installer (`scripts/install-remote.sh`) for non-Homebrew users
+- Unit tests for `format_size_kb()` boundary values
+- Flag combination tests (`--dry-run --verbose`, `--dry-run --quiet`)
+- GitHub issue/PR templates
+- `SECURITY.md` with private vulnerability reporting instructions
+- `UPGRADING.md` with migration guide from v0.4.x and original asimov
+
+### Changed
+
+- **BREAKING:** Fixed dirs (global caches) are now opt-in via config file (previously always on)
+- **BREAKING:** LaunchAgent label renamed from `com.stevegrunwell.asimov` to `com.django23.asimov`
+- Colors are now disabled when stdout is not a terminal (e.g. launchd, pipes)
+- `tmutil isexcluded` check removed from default path (now `--verbose`-only); mdfind optimization already prunes excluded paths
+- `record_excluded_path()` calls `du` once instead of twice per path
+- `format_size_kb()` uses bash arithmetic instead of spawning `awk`
+- Simplified `print_exclusion_summary()` to a single printf with early return
+- Removed stale `@version` header comment
+- Removed unnecessary defensive guards on always-initialized variables
+- Mock tmutil now idempotent (matches real tmutil behavior)
+- README rewritten with concise install-first structure
+- Updated all repo URLs from stevegrunwell/asimov to django23/asimov
+
+### Removed
+
+- `tmutil isexcluded` per-path check in default (non-verbose) mode
 
 ## [0.4.0] — 2025-02-20
 
@@ -137,7 +159,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.4.0...improvements
+[Unreleased]: https://github.com/django23/asimov/compare/v0.5.0...develop
+[0.5.0]: https://github.com/django23/asimov/compare/v0.4.0...v0.5.0
 [stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10
 [stevegrunwell/asimov#15]: https://github.com/stevegrunwell/asimov/pull/15
 [stevegrunwell/asimov#16]: https://github.com/stevegrunwell/asimov/pull/16

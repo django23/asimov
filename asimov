@@ -21,7 +21,7 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 # @license MIT
 
 # Keep ASIMOV_VERSION in sync with CHANGELOG and package managers (e.g. Homebrew).
-readonly ASIMOV_VERSION='0.4.2'
+readonly ASIMOV_VERSION='0.5.0'
 
 print_usage() {
     printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [--help] [--version]\n'
