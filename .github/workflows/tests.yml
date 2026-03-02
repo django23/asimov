@@ -12,8 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Note: macos-13 is being retired Dec 4, 2025; remove it before then.
-        os: [macos-13, macos-14, macos-15]
+        os: [macos-14, macos-15]
 
     steps:
       - uses: actions/checkout@v4

@@ -48,6 +48,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Added `make install` and `make uninstall` targets for streamlined setup and removal ([#35], props @sylver)
 * Added `scripts/uninstall.sh` to cleanly remove Asimov and its launchd schedule ([#35], props @sylver)
 * Added common interval reference comments to `com.stevegrunwell.asimov.plist` ([#35], props @sylver)
+* Dropped macOS 13 from the CI test matrix (runner was retired December 2025)
+
 
 ### Changed
 
