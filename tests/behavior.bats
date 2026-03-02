@@ -390,6 +390,25 @@ load test_helper
 }
 
 # =============================================================================
+# Flag combinations
+# =============================================================================
+
+@test "dry-run with verbose shows would-exclude messages" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --dry-run --verbose
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Would exclude"* ]]
+  [[ "$output" == *"node_modules"* ]]
+}
+
+@test "dry-run with quiet suppresses output" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --dry-run --quiet
+  [[ "$status" -eq 0 ]]
+  [[ -z "$output" ]]
+}
+
+# =============================================================================
 # --dry-run
 # =============================================================================
 
