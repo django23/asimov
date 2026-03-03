@@ -181,16 +181,16 @@ load test_helper
   # Pre-exclude the first project manually
   echo "${HOME}/Code/Already-Excluded/node_modules" > "$ASIMOV_TEST_EXCLUSIONS"
 
-  # Tell mock mdfind to report it as already excluded
+  # Tell mock mdfind to report the exact path as already excluded
   ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
   export ASIMOV_TEST_MDFIND_RESULTS
-  echo "${HOME}/Code/Already-Excluded" > "$ASIMOV_TEST_MDFIND_RESULTS"
+  echo "${HOME}/Code/Already-Excluded/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
 
   run_asimov
 
   # The new project should be excluded
   assert_excluded "${HOME}/Code/New-Project/node_modules"
-  # The already-excluded one should still only have 1 entry (not duplicated)
+  # Total exclusions: 1 pre-existing + 1 newly added = 2
   [[ "$(count_exclusions)" -eq 2 ]]
 }
 
@@ -352,7 +352,7 @@ disabled = node_modules package.json"
   export ASIMOV_TEST_MDFIND_RESULTS
   echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
 
-  # Run again — everything is already excluded and pruned by mdfind
+  # Run again — everything is already excluded and filtered by cache lookup
   run_asimov
   [[ "$output" == *"No new directories to exclude"* ]]
 }
@@ -445,7 +445,12 @@ disabled = node_modules package.json"
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/node_modules"
 
-  # Run again — directory is already excluded
+  # Simulate mdfind reporting the already-excluded path
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  # Run again — directory is already excluded but message is hidden without --verbose
   run_asimov
   [[ "$output" != *"already excluded"* ]]
 }
@@ -454,6 +459,11 @@ disabled = node_modules package.json"
   create_project "Code/My-Project" "package.json" "node_modules"
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/node_modules"
+
+  # Simulate mdfind reporting the already-excluded path
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
 
   # Run again with --verbose
   run_asimov --verbose

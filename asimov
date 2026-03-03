@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -Eeu -o pipefail
 
-# Temp file for tracking excluded directory sizes (cleaned up on exit).
+# Temp files for tracking excluded directory sizes and pre-existing exclusions.
 ASIMOV_SIZE_LOG="$(mktemp)"
-trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
+ASIMOV_EXCLUDED_CACHE="$(mktemp)"
+trap 'rm -f "$ASIMOV_SIZE_LOG" "$ASIMOV_EXCLUDED_CACHE"' EXIT
 
 # Look through the local filesystem and exclude development dependencies
 # from Apple Time Machine backups.
@@ -122,6 +123,12 @@ else
     ASIMOV_SCAN_DIR="$ASIMOV_ROOT"
 fi
 readonly ASIMOV_SCAN_DIR
+
+# Build a cache of paths already excluded from Time Machine (via Spotlight index).
+# Used for fast lookups in exclude_paths_from_stdin instead of adding O(n) prune
+# clauses to find (which caused pathological O(dirs × prune_count) performance).
+mdfind -onlyin "${ASIMOV_SCAN_DIR}" "com_apple_backup_excludeItem = 'com.apple.backupd'" 2>/dev/null \
+    | sort -u > "$ASIMOV_EXCLUDED_CACHE" || true
 
 # Load optional config from ~/.config/asimov/config.
 # Populates ASIMOV_CONFIG_* variables. Missing file is silently ignored.
@@ -286,25 +293,25 @@ record_excluded_path() {
     fi
 }
 
-# Process newline-separated paths from stdin: check exclusion status,
+# Process newline-separated paths from stdin: check the excluded-path cache,
 # call tmutil addexclusion (unless dry-run), and log sizes.
-# With --verbose, reports already-excluded paths.
-# Without --verbose, skips the isexcluded check — mdfind already pruned
-# most excluded paths, and tmutil addexclusion is idempotent.
+# Paths already in ASIMOV_EXCLUDED_CACHE are skipped (with a message in --verbose mode).
 exclude_paths_from_stdin() {
     local path
     while IFS=$'\n' read -r path; do
         [[ -d "$path" ]] || continue
-        if [[ -n "$ASIMOV_DRY_RUN" ]]; then
-            record_excluded_path "$path" "Would exclude: ${path}"
+
+        # Fast cache lookup — skip paths already excluded from Time Machine.
+        if grep -Fxq "$path" "$ASIMOV_EXCLUDED_CACHE" 2>/dev/null; then
+            if [[ -n "$ASIMOV_VERBOSE" ]]; then
+                echo "- ${path} is already excluded, skipping."
+            fi
             continue
         fi
 
-        if [[ -n "$ASIMOV_VERBOSE" ]]; then
-            if tmutil isexcluded "${path}" | grep -Fq '[Excluded]'; then
-                echo "- ${path} is already excluded, skipping."
-                continue
-            fi
+        if [[ -n "$ASIMOV_DRY_RUN" ]]; then
+            record_excluded_path "$path" "Would exclude: ${path}"
+            continue
         fi
 
         if ! tmutil addexclusion "${path}" 2>/dev/null; then
@@ -316,7 +323,9 @@ exclude_paths_from_stdin() {
     done
 }
 
-# Build find parameters to skip ASIMOV_SKIP_PATHS and paths already excluded (via mdfind).
+# Build find parameters to skip ASIMOV_SKIP_PATHS (hardcoded directories like .Trash, Library).
+# Already-excluded paths are NOT pruned here — they are filtered cheaply via grep in
+# exclude_paths_from_stdin instead, avoiding the O(dirs × prune_count) performance trap.
 # Result is stored in global find_parameters_skip.
 build_find_skip_params() {
     find_parameters_skip=()
@@ -324,10 +333,6 @@ build_find_skip_params() {
     for skip_dir in "${ASIMOV_SKIP_PATHS[@]}"; do
         find_parameters_skip+=( -not \( -path "${skip_dir}" -prune \) )
     done
-    local line
-    while IFS= read -r line; do
-        [[ -n "$line" ]] && find_parameters_skip+=( -not \( -path "${line}" -prune \) )
-    done < <(mdfind -onlyin "${ASIMOV_SCAN_DIR}" "com_apple_backup_excludeItem = 'com.apple.backupd'" 2>/dev/null | sort -u)
 }
 
 # Build find parameters for all directory/sentinel pairs.
@@ -452,8 +457,8 @@ fi
 build_find_skip_params
 build_find_vendor_params
 
-# Find all directories matching a sentinel pair under ASIMOV_ROOT, excluding skip paths
-# and already-excluded trees; pipe to exclude_paths_from_stdin.
+# Find all directories matching a sentinel pair under ASIMOV_SCAN_DIR, excluding skip paths;
+# pipe to exclude_paths_from_stdin which filters already-excluded paths via cache.
 [[ -z "$ASIMOV_QUIET" ]] && printf '%s📦 Processing matches…%s\n' \
     "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
 
