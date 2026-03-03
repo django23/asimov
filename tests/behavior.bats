@@ -415,6 +415,19 @@ disabled = node_modules package.json"
   [[ "$output" == *"Usage:"* ]]
 }
 
+@test "scans a specified directory instead of home" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  mkdir -p "${HOME}/Other-Project"
+  run_asimov "${HOME}/Code"
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+}
+
+@test "exits with error for non-existent directory argument" {
+  run_asimov /does/not/exist
+  [[ "$status" -eq 1 ]]
+  [[ "$output" =~ "not a directory" ]]
+}
+
 # =============================================================================
 # --verbose
 # =============================================================================

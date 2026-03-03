@@ -24,7 +24,7 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 readonly ASIMOV_VERSION='0.5.0'
 
 print_usage() {
-    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [--help] [--version]\n'
+    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [directory]\n'
     printf '\n'
     printf 'Exclude development dependency directories from Time Machine backups.\n'
     printf '\n'
@@ -34,6 +34,9 @@ print_usage() {
     printf '  --quiet     Suppress all output except errors\n'
     printf '  --help      Show this help and exit\n'
     printf '  --version   Show version and exit\n'
+    printf '\n'
+    printf 'Arguments:\n'
+    printf '  directory   Directory to scan (default: home directory)\n'
 }
 
 # Parse options (before we need ASIMOV_ROOT).
@@ -41,6 +44,7 @@ print_usage() {
 ASIMOV_DRY_RUN=
 ASIMOV_VERBOSE=
 ASIMOV_QUIET=
+ASIMOV_SCAN_DIR=
 for arg in "$@"; do
     case "$arg" in
         --dry-run) ASIMOV_DRY_RUN=1 ;;
@@ -52,6 +56,9 @@ for arg in "$@"; do
             echo "asimov: unknown option '$arg'" >&2
             print_usage >&2
             exit 1
+            ;;
+        *)
+            ASIMOV_SCAN_DIR="$arg"
             ;;
     esac
 done
@@ -100,6 +107,17 @@ resolve_asimov_root() {
 
 ASIMOV_ROOT="$(resolve_asimov_root)"
 readonly ASIMOV_ROOT
+
+# Default scan dir to ASIMOV_ROOT; override if user supplied a directory.
+if [[ -n "$ASIMOV_SCAN_DIR" ]]; then
+    if [[ ! -d "$ASIMOV_SCAN_DIR" ]]; then
+        echo "asimov: not a directory: ${ASIMOV_SCAN_DIR}" >&2
+        exit 1
+    fi
+else
+    ASIMOV_SCAN_DIR="$ASIMOV_ROOT"
+fi
+readonly ASIMOV_SCAN_DIR
 
 # Load optional config from ~/.config/asimov/config.
 # Populates ASIMOV_CONFIG_* variables. Missing file is silently ignored.
@@ -299,7 +317,7 @@ build_find_skip_params() {
     local line
     while IFS= read -r line; do
         [[ -n "$line" ]] && find_parameters_skip+=( -not \( -path "${line}" -prune \) )
-    done < <(mdfind -onlyin "${ASIMOV_ROOT}" "com_apple_backup_excludeItem = 'com.apple.backupd'" 2>/dev/null | sort -u)
+    done < <(mdfind -onlyin "${ASIMOV_SCAN_DIR}" "com_apple_backup_excludeItem = 'com.apple.backupd'" 2>/dev/null | sort -u)
 }
 
 # Build find parameters for all directory/sentinel pairs.
@@ -389,7 +407,7 @@ print_exclusion_summary() {
         if [[ -n "$ASIMOV_DRY_RUN" ]]; then
             msg="No directories would be excluded."
         else
-            msg="Done! No new directories to exclude."
+            msg="✓ Done! No new directories to exclude."
         fi
     else
         total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
@@ -397,7 +415,7 @@ print_exclusion_summary() {
         if [[ -n "$ASIMOV_DRY_RUN" ]]; then
             msg="Would exclude ${excluded_count} directories, totalling ${total_human}."
         else
-            msg="Done! Excluded ${excluded_count} directories, totalling ${total_human}."
+            msg="✓ Done! Excluded ${excluded_count} directories, totalling ${total_human}."
         fi
     fi
 
@@ -411,20 +429,23 @@ if [[ ! -d "$ASIMOV_ROOT" ]]; then
     exit 1
 fi
 
+[[ -z "$ASIMOV_QUIET" ]] && printf '\n%s⏳ Scanning for dependency directories…%s\n' \
+    "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
+
 build_find_skip_params
 build_find_vendor_params
 
 # Find all directories matching a sentinel pair under ASIMOV_ROOT, excluding skip paths
 # and already-excluded trees; pipe to exclude_paths_from_stdin.
-[[ -z "$ASIMOV_QUIET" ]] && printf '\n%sFinding dependency directories with corresponding definition files…%s\n' \
+[[ -z "$ASIMOV_QUIET" ]] && printf '%s📦 Processing matches…%s\n' \
     "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
 
-find "${ASIMOV_ROOT}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
+find "${ASIMOV_SCAN_DIR}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
     | exclude_paths_from_stdin
 
 # Exclude built-in fixed dirs only when enabled via config.
 if [[ "$ASIMOV_CONFIG_FIXED_DIRS_ENABLED" == "true" ]]; then
-    [[ -z "$ASIMOV_QUIET" ]] && printf '\n%sExcluding known cache directories…%s\n' \
+    [[ -z "$ASIMOV_QUIET" ]] && printf '\n%s💾 Excluding known cache directories…%s\n' \
         "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
     for fixed_dir in "${ASIMOV_FIXED_DIRS[@]}"; do
         if [[ -d "$fixed_dir" ]]; then
@@ -435,7 +456,7 @@ fi
 
 # Always process extra fixed dirs from config (user explicitly wants them).
 if [[ ${#ASIMOV_CONFIG_EXTRA_FIXED_DIRS[@]} -gt 0 ]]; then
-    [[ -z "$ASIMOV_QUIET" ]] && printf '\n%sExcluding user-configured directories…%s\n' \
+    [[ -z "$ASIMOV_QUIET" ]] && printf '\n%s⚙️  Excluding user-configured directories…%s\n' \
         "$ASIMOV_COLOR_INFO" "$ASIMOV_COLOR_RESET"
     for fixed_dir in "${ASIMOV_CONFIG_EXTRA_FIXED_DIRS[@]}"; do
         if [[ -d "$fixed_dir" ]]; then

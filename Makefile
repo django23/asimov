@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help test lint check install uninstall exclusions version release release-beta
+.PHONY: help test lint check bench install uninstall exclusions version release release-beta
 
 ## —————————— 🎵 Asimov 🎵 ————————————————————————————————————
 
@@ -23,6 +23,11 @@ lint: ## Run Shellcheck on all shell scripts
 	@shellcheck asimov scripts/install.sh scripts/install-remote.sh scripts/uninstall.sh tests/test_helper.bash tests/bin/run-tests.sh tests/bin/tmutil tests/bin/mdfind
 
 check: test lint ## Run tests and linting
+
+## bench: Time a dry-run scan of the home directory
+bench:
+	@echo "Timing asimov --dry-run (home directory)…"
+	@time ./asimov --dry-run
 
 
 ## —————————— 📦 Installation ——————————————————————————————————
