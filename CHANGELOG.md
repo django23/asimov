@@ -8,7 +8,15 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- `--stats` flag to show per-directory sizes and a total-space summary (opt-in, replaces previous always-on behaviour)
+- Optional positional `[directory]` argument to scope the scan to a specific directory instead of the full home directory
+- `make bench` target to compare dry-run timing against `tests/fixture/` across versions
+- `make bench-home` target to compare dry-run timing against the real home directory across versions
+- `tests/fixture/` directory with representative project structures for correctness checks and benchmarking
+
 ### Changed
+
+- Directory sizes and "totalling" summary are no longer computed by default; use `--stats` to enable them. Removes the `du -sk` call per matched directory, significantly reducing wall-clock time on large home directories.
 
 ### Fixed
 

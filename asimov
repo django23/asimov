@@ -24,7 +24,7 @@ trap 'rm -f "$ASIMOV_SIZE_LOG"' EXIT
 readonly ASIMOV_VERSION='0.5.0'
 
 print_usage() {
-    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [directory]\n'
+    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [--stats] [directory]\n'
     printf '\n'
     printf 'Exclude development dependency directories from Time Machine backups.\n'
     printf '\n'
@@ -32,6 +32,7 @@ print_usage() {
     printf '  --dry-run   Print what would be excluded without changing Time Machine\n'
     printf '  --verbose   Show all directories including already-excluded ones\n'
     printf '  --quiet     Suppress all output except errors\n'
+    printf '  --stats     Show directory sizes and total space in the summary\n'
     printf '  --help      Show this help and exit\n'
     printf '  --version   Show version and exit\n'
     printf '\n'
@@ -44,12 +45,14 @@ print_usage() {
 ASIMOV_DRY_RUN=
 ASIMOV_VERBOSE=
 ASIMOV_QUIET=
+ASIMOV_STATS=
 ASIMOV_SCAN_DIR=
 for arg in "$@"; do
     case "$arg" in
         --dry-run) ASIMOV_DRY_RUN=1 ;;
         --verbose) ASIMOV_VERBOSE=1 ;;
         --quiet)   ASIMOV_QUIET=1 ;;
+        --stats)   ASIMOV_STATS=1 ;;
         --help)    print_usage; exit 0 ;;
         --version) printf '%s\n' "$ASIMOV_VERSION"; exit 0 ;;
         -*)
@@ -65,6 +68,7 @@ done
 readonly ASIMOV_DRY_RUN
 readonly ASIMOV_VERBOSE
 readonly ASIMOV_QUIET
+readonly ASIMOV_STATS
 
 if [[ -n "$ASIMOV_QUIET" && -n "$ASIMOV_VERBOSE" ]]; then
     echo "asimov: --quiet and --verbose are mutually exclusive" >&2
@@ -262,18 +266,24 @@ readonly ASIMOV_FIXED_DIRS=(
     "${ASIMOV_ROOT}/.kube/http-cache"                 # Kubernetes HTTP cache
 )
 
-# Append path size to ASIMOV_SIZE_LOG and print a line. Message template must contain %s for size.
+# Record an excluded path: log for counting, compute size only with --stats.
 record_excluded_path() {
     local path="$1"
-    local message_tpl="$2"
-    local rawsize size_human line
-    rawsize=$(du -sk "${path}" 2>/dev/null | cut -f1 || echo "0")
-    if [[ -z "$ASIMOV_QUIET" ]]; then
-        size_human="$(format_size_kb "$rawsize")"
-        line="- ${message_tpl//%s/$size_human}"
-        printf '%s\n' "$line"
+    local message="$2"
+    if [[ -n "$ASIMOV_STATS" ]]; then
+        local rawsize size_human
+        rawsize=$(du -sk "${path}" 2>/dev/null | cut -f1 || echo "0")
+        echo "$rawsize" >> "$ASIMOV_SIZE_LOG"
+        if [[ -z "$ASIMOV_QUIET" ]]; then
+            size_human="$(format_size_kb "$rawsize")"
+            printf '%s\n' "- ${message} (${size_human})."
+        fi
+    else
+        echo "0" >> "$ASIMOV_SIZE_LOG"
+        if [[ -z "$ASIMOV_QUIET" ]]; then
+            printf '%s\n' "- ${message}."
+        fi
     fi
-    echo "$rawsize" >> "$ASIMOV_SIZE_LOG"
 }
 
 # Process newline-separated paths from stdin: check exclusion status,
@@ -286,7 +296,7 @@ exclude_paths_from_stdin() {
     while IFS=$'\n' read -r path; do
         [[ -d "$path" ]] || continue
         if [[ -n "$ASIMOV_DRY_RUN" ]]; then
-            record_excluded_path "$path" "Would exclude: ${path} (%s)."
+            record_excluded_path "$path" "Would exclude: ${path}"
             continue
         fi
 
@@ -302,7 +312,7 @@ exclude_paths_from_stdin() {
             continue
         fi
 
-        record_excluded_path "$path" "${path} has been excluded from Time Machine backups (%s)."
+        record_excluded_path "$path" "${path} has been excluded from Time Machine backups"
     done
 }
 
@@ -398,9 +408,9 @@ format_size_kb() {
     fi
 }
 
-# Print summary of excluded (or would-exclude) count and total size from ASIMOV_SIZE_LOG.
+# Print summary of excluded (or would-exclude) count, and total size when --stats is set.
 print_exclusion_summary() {
-    local excluded_count total_kb total_human msg
+    local excluded_count msg
     excluded_count=$(wc -l < "$ASIMOV_SIZE_LOG" | tr -d ' ')
 
     if [[ "$excluded_count" -eq 0 ]]; then
@@ -410,12 +420,19 @@ print_exclusion_summary() {
             msg="✓ Done! No new directories to exclude."
         fi
     else
-        total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
-        total_human="$(format_size_kb "$total_kb")"
+        local verb
         if [[ -n "$ASIMOV_DRY_RUN" ]]; then
-            msg="Would exclude ${excluded_count} directories, totalling ${total_human}."
+            verb="Would exclude"
         else
-            msg="✓ Done! Excluded ${excluded_count} directories, totalling ${total_human}."
+            verb="✓ Done! Excluded"
+        fi
+        if [[ -n "$ASIMOV_STATS" ]]; then
+            local total_kb total_human
+            total_kb=$(awk '{s+=$1} END {print s}' "$ASIMOV_SIZE_LOG")
+            total_human="$(format_size_kb "$total_kb")"
+            msg="${verb} ${excluded_count} directories, totalling ${total_human}."
+        else
+            msg="${verb} ${excluded_count} directories."
         fi
     fi
 

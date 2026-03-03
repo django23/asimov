@@ -325,6 +325,14 @@ disabled = node_modules package.json"
   create_project "Code/Project-B" "composer.json" "vendor"
   run_asimov
   [[ "$output" == *"Excluded 2 directories"* ]]
+  [[ "$output" != *"totalling"* ]]
+}
+
+@test "prints summary with count and total size when --stats is set" {
+  create_project "Code/Project-A" "package.json" "node_modules"
+  create_project "Code/Project-B" "composer.json" "vendor"
+  run_asimov --stats
+  [[ "$output" == *"Excluded 2 directories"* ]]
   [[ "$output" == *"totalling"* ]]
   [[ "$output" =~ totalling\ .*[KMG]\. ]]
 }
@@ -511,10 +519,18 @@ disabled = node_modules package.json"
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"Would exclude"* ]]
   [[ "$output" == *"node_modules"* ]]
-  # Summary line must show would-exclude and a size (K, M, or G)
   [[ "$output" == *"Would exclude"*"directories"* ]]
+  [[ "$output" != *"totalling"* ]]
+  # Mock tmutil should not have recorded any exclusion
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
+@test "dry-run with --stats shows size in per-path output and total" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --dry-run --stats
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Would exclude"* ]]
   [[ "$output" == *"totalling"* ]]
   [[ "$output" =~ totalling\ [0-9]+[KMG]\. ]]
-  # Mock tmutil should not have recorded any exclusion
   [[ "$(count_exclusions)" -eq 0 ]]
 }
