@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help test lint check bench install uninstall exclusions version release release-beta
+.PHONY: help test lint check bench bench-home install uninstall exclusions version release release-beta
 
 ## —————————— 🎵 Asimov 🎵 ————————————————————————————————————
 
@@ -24,10 +24,25 @@ lint: ## Run Shellcheck on all shell scripts
 
 check: test lint ## Run tests and linting
 
-## bench: Time a dry-run scan of the home directory
+## bench: Compare dry-run scan timing: current vs v0.4.2, against tests/fixture
 bench:
-	@echo "Timing asimov --dry-run (home directory)…"
-	@time ./asimov --dry-run
+	@git show v0.4.2:asimov > /tmp/asimov-v042 && chmod +x /tmp/asimov-v042
+	@echo "=== v0.4.2 (HOME=tests/fixture) ==="
+	@bash -c 'time HOME="$(CURDIR)/tests/fixture" /tmp/asimov-v042 --dry-run'
+	@echo ""
+	@echo "=== v0.5.x (directory=tests/fixture) ==="
+	@bash -c 'time HOME="$(CURDIR)/tests/fixture" ./asimov --dry-run "$(CURDIR)/tests/fixture"'
+	@rm -f /tmp/asimov-v042
+
+## bench-home: Compare dry-run scan timing: current vs v0.4.2, against real home directory
+bench-home:
+	@git show v0.4.2:asimov > /tmp/asimov-v042 && chmod +x /tmp/asimov-v042
+	@echo "=== v0.4.2 (full home) ==="
+	@bash -c 'time /tmp/asimov-v042 --dry-run'
+	@echo ""
+	@echo "=== v0.5.x (full home) ==="
+	@bash -c 'time ./asimov --dry-run'
+	@rm -f /tmp/asimov-v042
 
 
 ## —————————— 📦 Installation ——————————————————————————————————
