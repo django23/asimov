@@ -8,16 +8,28 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- Persistent path cache (`~/.cache/asimov/paths`) that stores discovered dependency paths across runs. Subsequent runs skip the full `find` traversal entirely, reducing runtime from ~75s to ~1-2s on typical home directories
+- Incremental Spotlight discovery via `mdfind` to find newly created projects without traversing the filesystem
+- `--full-scan` flag to force a full filesystem scan, ignoring any existing cache
+- `--no-cache` flag to run a full scan without reading or writing cache
 - `--stats` flag to show per-directory sizes and a total-space summary (opt-in, replaces previous always-on behaviour)
 - Optional positional `[directory]` argument to scope the scan to a specific directory instead of the full home directory
 - `make bench` target to compare dry-run timing against `tests/fixture/` across versions
 - `make bench-home` target to compare dry-run timing against the real home directory across versions
 - `tests/fixture/` directory with representative project structures for correctness checks and benchmarking
+- Persistent excluded-path state (`~/.cache/asimov/excluded`) that tracks successful `tmutil addexclusion` calls across runs. Handles interrupted runs and Spotlight indexing delays — paths excluded in a previous run are never re-excluded, even if Spotlight hasn't indexed them yet
 
 ### Changed
 
+- Default run with an existing cache now uses the cache instead of a full `find` traversal; use `--full-scan` to force re-traversal
 - Directory sizes and "totalling" summary are no longer computed by default; use `--stats` to enable them. Removes the `du -sk` call per matched directory, significantly reducing wall-clock time on large home directories.
 - Already-excluded paths are now filtered via a fast cache lookup (`grep`) instead of adding per-path `-not -prune` clauses to `find`. Removes the O(directories × excluded_paths) overhead that dominated scan time on large home directories. Speed improvements of 37%
+- `tmutil addexclusion` uses per-path calls instead of batch to avoid wasting minutes when a single path fails (e.g. Go module paths with `@` characters). Batch mode provided no speed benefit — tmutil processes paths sequentially at ~11s each regardless
+- Paths that are descendants of fixed dirs (e.g. `~/.cache`) are skipped during sentinel-based exclusion since the fixed dir will be excluded unconditionally
+- Nested dependency paths are automatically deduplicated — if a parent directory is excluded, its descendants are skipped since Time Machine exclusions are recursive
+- Full scan now streams `find` output through `tee` to write the cache incrementally; an interrupted scan leaves a partial cache that accelerates the next run
+- Spotlight incremental discovery now bulk-filters cached paths with a single `grep -Fxvf` instead of one `grep` subprocess per candidate, and uses bash parameter expansion instead of `dirname`/`basename` subprocesses — eliminates ~27,000 subprocess spawns on typical home directories
+- Excluded-path filtering now uses a single bulk `grep -Fxvf` instead of per-path subprocess spawns
 
 ### Fixed
 

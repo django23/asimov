@@ -78,6 +78,58 @@ write_config() {
     printf '%s\n' "$1" > "${config_dir}/config"
 }
 
+# Write a path cache file for testing.
+#
+# Usage: write_path_cache "path1" "path2" ...
+write_path_cache() {
+    local cache_dir="${HOME}/.cache/asimov"
+    mkdir -p "$cache_dir"
+    {
+        echo "# asimov path cache — updated 2026-01-01T00:00:00Z"
+        for path in "$@"; do
+            echo "$path"
+        done
+    } > "${cache_dir}/paths"
+}
+
+# Read the path cache file, stripping comments and blank lines.
+read_path_cache() {
+    local cache_file="${HOME}/.cache/asimov/paths"
+    [[ -f "$cache_file" ]] || return 0
+    grep -v '^#' "$cache_file" | grep -v '^$' || true
+}
+
+# Assert that a path is present in the path cache.
+assert_cached() {
+    local path="$1"
+    local cache_file="${HOME}/.cache/asimov/paths"
+    if [[ ! -f "$cache_file" ]]; then
+        echo "Expected cache file to exist, but it does not." >&2
+        return 1
+    fi
+    if ! grep -Fxq "$path" "$cache_file"; then
+        echo "Expected '$path' to be in cache, but it was not." >&2
+        echo "Cache contents:" >&2
+        cat "$cache_file" >&2
+        return 1
+    fi
+}
+
+# Assert that a path is NOT present in the path cache.
+refute_cached() {
+    local path="$1"
+    local cache_file="${HOME}/.cache/asimov/paths"
+    if [[ ! -f "$cache_file" ]]; then
+        return 0
+    fi
+    if grep -Fxq "$path" "$cache_file"; then
+        echo "Expected '$path' to NOT be in cache, but it was." >&2
+        echo "Cache contents:" >&2
+        cat "$cache_file" >&2
+        return 1
+    fi
+}
+
 # Load format_size_kb and its constants for unit testing.
 # Extracts just the constants and function from the main script
 # without executing the rest of the script.

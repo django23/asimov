@@ -215,7 +215,7 @@ enabled = true"
 @test "does not fail when fixed directory does not exist" {
   write_config "[fixed_dirs]
 enabled = true"
-  run_asimov
+  run_asimov --no-cache
   [[ "$status" -eq 0 ]]
   [[ "$(count_exclusions)" -eq 0 ]]
 }
