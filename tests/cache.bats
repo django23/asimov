@@ -90,6 +90,33 @@ load test_helper
   assert_cached "${HOME}/Code/New-Project/target"
 }
 
+@test "mdfind candidates without sentinel are skipped on second run" {
+  create_project "Code/Existing-Project" "package.json" "node_modules"
+
+  # First run: creates cache
+  run_asimov
+  assert_cached "${HOME}/Code/Existing-Project/node_modules"
+
+  # Create a directory with no sentinel (false positive from mdfind)
+  mkdir -p "${HOME}/Code/No-Sentinel/target"
+
+  ASIMOV_TEST_MDFIND_SENTINEL_RESULTS="${TEST_TEMP_DIR}/.mdfind_sentinel_results"
+  export ASIMOV_TEST_MDFIND_SENTINEL_RESULTS
+  echo "${HOME}/Code/No-Sentinel/target" > "$ASIMOV_TEST_MDFIND_SENTINEL_RESULTS"
+
+  # First cached run: checks the candidate, finds no sentinel, records it as seen
+  run_asimov
+  refute_excluded "${HOME}/Code/No-Sentinel/target"
+  [[ -f "${HOME}/.cache/asimov/mdfind_seen" ]]
+  grep -Fxq "${HOME}/Code/No-Sentinel/target" "${HOME}/.cache/asimov/mdfind_seen"
+
+  # Second cached run: candidate should be filtered by mdfind_seen cache
+  run_asimov --verbose
+  [[ "$status" -eq 0 ]]
+  # The candidate should not appear in "candidates to check" (filtered out)
+  [[ "$output" != *"candidates to check"* ]] || [[ "$output" == *"0 new candidates"* ]] || [[ "$output" == *"All"*"already cached"* ]]
+}
+
 @test "mdfind candidate without sentinel is not cached" {
   create_project "Code/Existing-Project" "package.json" "node_modules"
 
@@ -247,6 +274,68 @@ load test_helper
   run_asimov --full-scan --no-cache
   [[ "$status" -eq 1 ]]
   [[ "$output" == *"mutually exclusive"* ]]
+}
+
+# =============================================================================
+# Failed-path persistence
+# =============================================================================
+
+@test "tmutil failure is recorded in failed state" {
+  create_project "Code/My-Project" "go.mod" "vendor"
+
+  # Configure mock tmutil to fail on this path
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="$(mktemp)"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/My-Project/vendor" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov
+  [[ "$status" -eq 0 ]]
+  refute_excluded "${HOME}/Code/My-Project/vendor"
+  assert_failed "${HOME}/Code/My-Project/vendor"
+}
+
+@test "failed paths are skipped on subsequent runs" {
+  create_project "Code/Good-Project" "package.json" "node_modules"
+  create_project "Code/Bad-Project" "go.mod" "vendor"
+
+  # First run: Bad-Project fails
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="$(mktemp)"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/Bad-Project/vendor" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov
+  [[ "$status" -eq 0 ]]
+  assert_excluded "${HOME}/Code/Good-Project/node_modules"
+  refute_excluded "${HOME}/Code/Bad-Project/vendor"
+  assert_failed "${HOME}/Code/Bad-Project/vendor"
+
+  # Second run: Bad-Project should be skipped entirely (not retried)
+  run_asimov
+  [[ "$status" -eq 0 ]]
+  # Should still not be excluded (was never successfully added)
+  refute_excluded "${HOME}/Code/Bad-Project/vendor"
+}
+
+@test "--full-scan clears failed state and retries" {
+  create_project "Code/My-Project" "go.mod" "vendor"
+
+  # First run: fails
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="$(mktemp)"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/My-Project/vendor" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov
+  assert_failed "${HOME}/Code/My-Project/vendor"
+
+  # Remove the failure condition
+  rm -f "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+  unset ASIMOV_TEST_TMUTIL_FAIL_PATHS
+
+  # Full scan should clear failed state and retry successfully
+  run_asimov --full-scan
+  [[ "$status" -eq 0 ]]
+  assert_excluded "${HOME}/Code/My-Project/vendor"
+  refute_failed "${HOME}/Code/My-Project/vendor"
 }
 
 # =============================================================================

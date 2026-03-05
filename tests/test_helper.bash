@@ -130,6 +130,44 @@ refute_cached() {
     fi
 }
 
+# Write a failed-path state file for testing.
+#
+# Usage: write_failed_state "path1" "path2" ...
+write_failed_state() {
+    local cache_dir="${HOME}/.cache/asimov"
+    mkdir -p "$cache_dir"
+    printf '%s\n' "$@" > "${cache_dir}/failed"
+}
+
+# Assert that a path is present in the failed-path state.
+assert_failed() {
+    local path="$1"
+    local failed_file="${HOME}/.cache/asimov/failed"
+    if [[ ! -f "$failed_file" ]]; then
+        echo "Expected failed state file to exist, but it does not." >&2
+        return 1
+    fi
+    if ! grep -Fxq "$path" "$failed_file"; then
+        echo "Expected '$path' to be in failed state, but it was not." >&2
+        echo "Failed state contents:" >&2
+        cat "$failed_file" >&2
+        return 1
+    fi
+}
+
+# Assert that a path is NOT present in the failed-path state.
+refute_failed() {
+    local path="$1"
+    local failed_file="${HOME}/.cache/asimov/failed"
+    [[ -f "$failed_file" ]] || return 0
+    if grep -Fxq "$path" "$failed_file"; then
+        echo "Expected '$path' to NOT be in failed state, but it was." >&2
+        echo "Failed state contents:" >&2
+        cat "$failed_file" >&2
+        return 1
+    fi
+}
+
 # Load format_size_kb and its constants for unit testing.
 # Extracts just the constants and function from the main script
 # without executing the rest of the script.

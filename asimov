@@ -138,6 +138,8 @@ resolve_asimov_root() {
 ASIMOV_ROOT="$(resolve_asimov_root)"
 readonly ASIMOV_ROOT
 readonly ASIMOV_EXCLUDED_STATE="${ASIMOV_ROOT}/.cache/asimov/excluded"
+readonly ASIMOV_FAILED_STATE="${ASIMOV_ROOT}/.cache/asimov/failed"
+readonly ASIMOV_MDFIND_SEEN="${ASIMOV_ROOT}/.cache/asimov/mdfind_seen"
 
 # Default scan dir to ASIMOV_ROOT; override if user supplied a directory.
 if [[ -n "$ASIMOV_SCAN_DIR" ]]; then
@@ -150,6 +152,11 @@ else
 fi
 readonly ASIMOV_SCAN_DIR
 
+# --full-scan clears persistent caches so everything is re-evaluated.
+if [[ -n "$ASIMOV_FULL_SCAN" ]]; then
+    rm -f "$ASIMOV_FAILED_STATE" "$ASIMOV_MDFIND_SEEN"
+fi
+
 # Build a cache of paths already excluded from Time Machine.
 # Merges Spotlight index (what macOS reports) with our own persistent state
 # (written after each successful tmutil call). The persistent state handles:
@@ -159,9 +166,15 @@ verbose_timing "Building excluded-path cache via Spotlight…"
 mdfind -onlyin "${ASIMOV_SCAN_DIR}" "com_apple_backup_excludeItem = 'com.apple.backupd'" 2>/dev/null \
     | sort -u > "$ASIMOV_EXCLUDED_CACHE" || true
 spotlight_count="$(wc -l < "$ASIMOV_EXCLUDED_CACHE" | tr -d ' ')"
-# Merge persistent excluded state (survives across runs, handles Spotlight lag)
-if [[ -f "$ASIMOV_EXCLUDED_STATE" ]]; then
-    sort -u "$ASIMOV_EXCLUDED_CACHE" "$ASIMOV_EXCLUDED_STATE" > "${ASIMOV_EXCLUDED_CACHE}.merged"
+# Merge persistent excluded + failed state into the Spotlight cache.
+# Failed paths (e.g. Go modules with @ chars) are included so the bulk filter
+# skips them instantly instead of wasting time retrying tmutil.
+if [[ -f "$ASIMOV_EXCLUDED_STATE" ]] || [[ -f "$ASIMOV_FAILED_STATE" ]]; then
+    {
+        cat "$ASIMOV_EXCLUDED_CACHE"
+        if [[ -f "$ASIMOV_EXCLUDED_STATE" ]]; then cat "$ASIMOV_EXCLUDED_STATE"; fi
+        if [[ -f "$ASIMOV_FAILED_STATE" ]]; then cat "$ASIMOV_FAILED_STATE"; fi
+    } | sort -u > "${ASIMOV_EXCLUDED_CACHE}.merged"
     mv -f "${ASIMOV_EXCLUDED_CACHE}.merged" "$ASIMOV_EXCLUDED_CACHE"
 fi
 verbose_timing "Excluded-path cache ready ($(wc -l < "$ASIMOV_EXCLUDED_CACHE" | tr -d ' ') entries, ${spotlight_count} from Spotlight)"
@@ -301,6 +314,12 @@ finalize_path_cache() {
     mv -f "$ASIMOV_PATH_CACHE_TMP" "$ASIMOV_PATH_CACHE"
     ASIMOV_PATH_CACHE_TMP=""
 
+    # Dedup the mdfind_seen file (grows with appends each run)
+    if [[ -f "$ASIMOV_MDFIND_SEEN" ]]; then
+        sort -u "$ASIMOV_MDFIND_SEEN" > "${ASIMOV_MDFIND_SEEN}.tmp"
+        mv -f "${ASIMOV_MDFIND_SEEN}.tmp" "$ASIMOV_MDFIND_SEEN"
+    fi
+
     if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
         local console_user
         console_user="$(stat -f '%Su' /dev/console 2>/dev/null || echo '')"
@@ -356,30 +375,82 @@ discover_new_paths_via_mdfind() {
     done
     local query="kMDItemContentType == \"public.folder\" && (${name_clauses})"
 
-    # Run mdfind, then bulk-filter cached paths (1 grep instead of N per-candidate greps)
+    # Run mdfind, write results to temp file (avoids slow printf on 15K-line strings).
     verbose_timing "Running Spotlight query for ${#dir_names[@]} directory names…"
-    local all_candidates
-    all_candidates="$(mdfind -onlyin "$ASIMOV_SCAN_DIR" "$query" 2>/dev/null || true)"
-    [[ -z "$all_candidates" ]] && return 0
+    local candidates_file uncached_file
+    candidates_file="$(mktemp)"
+    uncached_file="$(mktemp)"
+    mdfind -onlyin "$ASIMOV_SCAN_DIR" "$query" 2>/dev/null > "$candidates_file" || true
+    if [[ ! -s "$candidates_file" ]]; then
+        rm -f "$candidates_file" "$uncached_file"
+        return 0
+    fi
 
     local total_mdfind
-    total_mdfind="$(printf '%s\n' "$all_candidates" | wc -l | tr -d ' ')"
+    total_mdfind="$(wc -l < "$candidates_file" | tr -d ' ')"
     verbose_timing "Spotlight returned ${total_mdfind} candidates"
 
-    local uncached
-    if [[ -n "$cached_paths_file" && -f "$cached_paths_file" ]]; then
-        uncached="$(printf '%s\n' "$all_candidates" | grep -Fxvf "$cached_paths_file" || true)"
+    # Descendant filter first: skip candidates nested under cached paths. TM exclusions
+    # are recursive so descendants are already covered. Run this BEFORE the exact-match
+    # filter because it's fast (grep -Fvf ~4s on 15K lines) and eliminates ~90% of
+    # candidates, making the subsequent exact filter much cheaper.
+    if [[ -n "$cached_paths_file" && -s "$cached_paths_file" ]]; then
+        local prefix_file
+        prefix_file="$(mktemp)"
+        sed 's|$|/|' "$cached_paths_file" > "$prefix_file"
+        grep -Fvf "$prefix_file" "$candidates_file" > "$uncached_file" || true
+        rm -f "$prefix_file"
     else
-        uncached="$all_candidates"
+        cp "$candidates_file" "$uncached_file"
     fi
-    [[ -z "$uncached" ]] && {
-        verbose_timing "All ${total_mdfind} candidates already cached"
-        return 0
-    }
+    rm -f "$candidates_file"
 
+    if [[ ! -s "$uncached_file" ]]; then
+        verbose_timing "All ${total_mdfind} candidates were nested under cached paths"
+        rm -f "$uncached_file"
+        return 0
+    fi
     local uncached_count
-    uncached_count="$(printf '%s\n' "$uncached" | wc -l | tr -d ' ')"
-    verbose_timing "After cache filter: ${uncached_count} new candidates to check"
+    uncached_count="$(wc -l < "$uncached_file" | tr -d ' ')"
+    verbose_timing "After descendant filter: ${uncached_count} remain (skipped $((total_mdfind - uncached_count)) nested)"
+
+    # Exact-match filter: remove candidates already in the path cache or previously
+    # checked by mdfind (no-sentinel directories that would just be rechecked for nothing).
+    # Uses sort+comm for set difference — BSD grep -Fxvf is O(n×m) and takes 35s on 15K
+    # lines; sort+comm is O(n log n) and handles the same in <1s.
+    local combined_filter
+    combined_filter="$(mktemp)"
+    {
+        if [[ -n "$cached_paths_file" && -s "$cached_paths_file" ]]; then cat "$cached_paths_file"; fi
+        if [[ -f "$ASIMOV_MDFIND_SEEN" ]]; then cat "$ASIMOV_MDFIND_SEEN"; fi
+    } > "$combined_filter"
+    if [[ -s "$combined_filter" ]]; then
+        local sorted_candidates sorted_filter filtered_file
+        sorted_candidates="$(mktemp)"
+        sorted_filter="$(mktemp)"
+        filtered_file="$(mktemp)"
+        sort "$uncached_file" > "$sorted_candidates"
+        sort -u "$combined_filter" > "$sorted_filter"
+        comm -23 "$sorted_candidates" "$sorted_filter" > "$filtered_file"
+        rm -f "$sorted_candidates" "$sorted_filter"
+        mv -f "$filtered_file" "$uncached_file"
+    fi
+    rm -f "$combined_filter"
+
+    if [[ ! -s "$uncached_file" ]]; then
+        verbose_timing "All candidates already checked"
+        rm -f "$uncached_file"
+        return 0
+    fi
+    local filtered_count
+    filtered_count="$(wc -l < "$uncached_file" | tr -d ' ')"
+    verbose_timing "After cache filter: ${filtered_count} new candidates to check (skipped $((uncached_count - filtered_count)) seen)"
+
+    if [[ ! -s "$uncached_file" ]]; then
+        verbose_timing "All candidates were nested under cached paths"
+        rm -f "$uncached_file"
+        return 0
+    fi
 
     local candidate mdfind_checked=0 mdfind_matched=0
     while IFS= read -r candidate; do
@@ -428,7 +499,16 @@ discover_new_paths_via_mdfind() {
         if [[ $((mdfind_checked % 100)) -eq 0 ]]; then
             verbose_timing "  …checked ${mdfind_checked} candidates (${mdfind_matched} matched)"
         fi
-    done <<< "$uncached"
+    done < "$uncached_file"
+
+    # Persist all checked candidates so they're skipped on the next cached run.
+    # Prevents re-checking 1000+ no-sentinel candidates every time.
+    # No-op for dry-run/no-cache (no persistent state should be written).
+    if [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_CACHE" ]]; then
+        ensure_cache_dir
+        cat "$uncached_file" >> "$ASIMOV_MDFIND_SEEN"
+    fi
+    rm -f "$uncached_file"
     verbose_timing "Spotlight: checked ${mdfind_checked} candidates, ${mdfind_matched} new matches"
 }
 
@@ -547,8 +627,18 @@ record_excluded_path() {
 
 # Process newline-separated paths from stdin: check the excluded-path cache,
 # call tmutil addexclusion (unless dry-run), and log sizes.
-# Paths already in ASIMOV_EXCLUDED_CACHE are skipped (with a message in --verbose mode).
-# Batches tmutil calls for performance (one syscall instead of N).
+#
+# Performance notes (learned the hard way):
+# - tmutil addexclusion takes ~11s per call (IPC with TM daemon). This dominates runtime.
+# - Batching (tmutil addexclusion path1 path2 ...) provides NO speed benefit — tmutil
+#   processes paths sequentially at ~11s each. Worse: one bad path (e.g. Go modules with
+#   @ characters) fails the entire batch, wasting all accumulated time before fallback.
+# - Spotlight (mdfind) can be stale: recently excluded paths may not appear in the index.
+#   Without a guard, this causes re-excluding already-done paths (~11s each, wasted).
+# - Three-layer defense against wasted tmutil calls:
+#   1. Bulk grep against Spotlight + persistent state (instant, catches ~90%)
+#   2. Filter descendants of fixed dirs (instant, catches ~5%)
+#   3. tmutil isexcluded per-path guard (fast, catches remaining stale entries)
 exclude_paths_from_stdin() {
     local path
     local -a all_paths=()
@@ -560,7 +650,9 @@ exclude_paths_from_stdin() {
     done
     [[ ${#all_paths[@]} -eq 0 ]] && return 0
 
-    # Bulk filter against excluded-path cache (1 grep instead of N per-path greps)
+    # Layer 1: Bulk filter against excluded-path cache (1 grep vs N subprocess spawns).
+    # NEVER use per-path grep in a loop — spawning a subprocess per candidate is O(N)
+    # process creation overhead that dominated runtime with ~15k mdfind candidates.
     verbose_timing "Filtering ${#all_paths[@]} paths against excluded-path cache…"
     local -a to_exclude=()
     local already_excluded=0
@@ -581,8 +673,8 @@ exclude_paths_from_stdin() {
     fi
     verbose_timing "Filtered: ${#to_exclude[@]} new, ${already_excluded} already excluded"
 
-    # Filter descendants of ASIMOV_FIXED_DIRS — they'll be excluded unconditionally
-    # later, so calling tmutil on them individually is wasted work (~11s per call).
+    # Layer 2: Filter descendants of ASIMOV_FIXED_DIRS — they'll be excluded
+    # unconditionally later, so calling tmutil on them individually is wasted (~11s each).
     if [[ "$ASIMOV_CONFIG_FIXED_DIRS_ENABLED" == "true" && ${#to_exclude[@]} -gt 0 ]]; then
         local -a filtered_exclude=()
         for path in "${to_exclude[@]}"; do
@@ -617,17 +709,31 @@ exclude_paths_from_stdin() {
         return 0
     fi
 
-    # Per-path tmutil calls. Batching provides no speed benefit (tmutil processes
-    # paths sequentially at ~11s each regardless) and risks wasting the full batch
-    # time if any single path fails (e.g. Go module paths with @ characters).
-    verbose_timing "Calling tmutil addexclusion for ${#to_exclude[@]} paths…"
+    # Layer 3: tmutil isexcluded guard before the expensive addexclusion (~11s each).
+    # This is the ground truth — catches paths the Spotlight cache missed (stale index,
+    # interrupted previous runs). v0.5.0 removed this check; re-adding it cut runtime
+    # from 73 min to 79s on a real system with ~460 dependency paths.
+    verbose_timing "Excluding ${#to_exclude[@]} paths via tmutil…"
     ensure_cache_dir
-    local tmutil_i=0
+    local tmutil_i=0 skipped_already=0
     for path in "${to_exclude[@]}"; do
         tmutil_i=$((tmutil_i + 1))
+        # Ground-truth check: is this path actually already excluded?
+        if tmutil isexcluded "$path" 2>/dev/null | grep -Fq '[Excluded]'; then
+            skipped_already=$((skipped_already + 1))
+            # Persist so we skip it via the fast cache next time
+            printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
+            if [[ -n "$ASIMOV_VERBOSE" ]]; then
+                echo "- ${path} is already excluded, skipping."
+            fi
+            continue
+        fi
         local path_start=$SECONDS
         if ! tmutil addexclusion "${path}" 2>/dev/null; then
             echo "! ${path}: failed to exclude (tmutil error), skipping." >&2
+            # Persist failure so we skip this path on subsequent runs.
+            # Common cause: Go module paths with @ characters. Use --full-scan to retry.
+            printf '%s\n' "$path" >> "$ASIMOV_FAILED_STATE"
             continue
         fi
         # Persist immediately — survives Ctrl+C so the next run doesn't redo this path
@@ -635,6 +741,9 @@ exclude_paths_from_stdin() {
         record_excluded_path "$path" "${path} has been excluded from Time Machine backups"
         verbose_timing "  [${tmutil_i}/${#to_exclude[@]}] excluded in $((SECONDS - path_start))s: ${path}"
     done
+    if [[ $skipped_already -gt 0 ]]; then
+        verbose_timing "Skipped ${skipped_already} already-excluded paths (Spotlight cache was stale)"
+    fi
 }
 
 # Build find parameters to skip ASIMOV_SKIP_PATHS (hardcoded directories like .Trash, Library).

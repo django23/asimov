@@ -18,6 +18,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - `make bench-home` target to compare dry-run timing against the real home directory across versions
 - `tests/fixture/` directory with representative project structures for correctness checks and benchmarking
 - Persistent excluded-path state (`~/.cache/asimov/excluded`) that tracks successful `tmutil addexclusion` calls across runs. Handles interrupted runs and Spotlight indexing delays — paths excluded in a previous run are never re-excluded, even if Spotlight hasn't indexed them yet
+- Persistent failed-path state (`~/.cache/asimov/failed`) that remembers paths where `tmutil addexclusion` fails (e.g. Go module paths with `@` characters). Failed paths are automatically skipped on subsequent runs instead of retrying; use `--full-scan` to retry
+- Persistent mdfind-seen cache (`~/.cache/asimov/mdfind_seen`) that remembers all candidates checked by Spotlight discovery. Directories without sentinels (false positives) are not re-checked on subsequent runs, eliminating ~1,200 redundant sentinel lookups per cached run
 
 ### Changed
 
@@ -29,6 +31,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Nested dependency paths are automatically deduplicated — if a parent directory is excluded, its descendants are skipped since Time Machine exclusions are recursive
 - Full scan now streams `find` output through `tee` to write the cache incrementally; an interrupted scan leaves a partial cache that accelerates the next run
 - Spotlight incremental discovery now bulk-filters cached paths with a single `grep -Fxvf` instead of one `grep` subprocess per candidate, and uses bash parameter expansion instead of `dirname`/`basename` subprocesses — eliminates ~27,000 subprocess spawns on typical home directories
+- Spotlight discovery now prefix-filters candidates nested under cached paths before sentinel checking — eliminates thousands of redundant sentinel lookups (e.g. `node_modules/dep/node_modules` under an already-cached `node_modules`)
+- Spotlight discovery uses temp files instead of bash string variables for large datasets — avoids slow `printf` on 15K-line strings
+- Spotlight discovery now runs descendant filter before exact-match filter and uses `sort`+`comm` instead of `grep -Fxvf` for set difference — BSD `grep -Fxvf` is O(n×m) and took 35s on 15K candidates; `sort`+`comm` is O(n log n) and takes <1s
 - Excluded-path filtering now uses a single bulk `grep -Fxvf` instead of per-path subprocess spawns
 
 ### Fixed
