@@ -98,53 +98,30 @@ scripts/
 Makefile                # Build targets (test, lint, check, install, uninstall)
 ```
 
-## Releasing (maintainers only)
+## Releasing (maintainers)
 
-Releases are tagged from `main`. The flow is:
+Tag from `main`. Signed commits are required; see SSH setup below.
 
-1. **Prepare** — on a feature branch, bump the version in `./asimov` (line `ASIMOV_VERSION=`), move entries from `[Unreleased]` to a new `[X.Y.Z]` section in `CHANGELOG.md`, open a PR into `main`.
-2. **Merge** the PR. Make sure `main` is clean and `make check` passes.
-3. **Tag + push** (signed, requires SSH signing configured — see below):
-   ```sh
-   git checkout main && git pull
-   make release        # stable, e.g. v0.6.1
-   # or
-   make release-beta   # pre-release, e.g. v0.6.1-beta.1
-   ```
-   `make release` enforces: clean tree, on `main`, tag doesn't already exist, and creates a signed tag. Pushing the tag triggers `.github/workflows/release.yml`, which runs tests and publishes a GitHub release with notes pulled from `CHANGELOG.md`.
-4. **Bump the Homebrew formula** — clone the tap alongside this repo (one-time):
-   ```sh
-   git clone git@github.com:django23/homebrew-tap.git ../homebrew-tap
-   ```
-   Then, after the release is live:
-   ```sh
-   make bump-formula   # downloads the tarball, computes sha256, updates Formula/asimov.rb, commits
-   cd ../homebrew-tap && git push
-   ```
-   Verify with `brew install django23/tap/asimov`.
+1. In a PR, bump `ASIMOV_VERSION` in `./asimov` and promote `[Unreleased]` → `[X.Y.Z]` in `CHANGELOG.md`. Merge.
+2. `git checkout main && git pull && make release` (or `make release-beta`). This signs the tag and pushes; `release.yml` creates the GitHub release from CHANGELOG.
+3. Clone the tap once: `git clone git@github.com:django23/homebrew-tap.git ../homebrew-tap`.
+4. `make bump-formula` → `cd ../homebrew-tap && git push`. Verify with `brew install django23/tap/asimov`.
 
-### One-time setup: SSH-signed commits + tags
-
-Branch protection on `main` requires signed commits. Configure once per clone:
+### SSH-signed commits (one-time per clone)
 
 ```sh
-# Generate a dedicated signing key (no passphrase is fine for signing)
-ssh-keygen -t ed25519 -C "your signing key" -f ~/.ssh/id_ed25519_signing -N ""
-
-# Upload to GitHub as a signing key
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_signing -N ""
 gh auth refresh -s admin:ssh_signing_key
-gh ssh-key add ~/.ssh/id_ed25519_signing.pub --type signing --title "$(hostname)-signing"
+gh ssh-key add ~/.ssh/id_ed25519_signing.pub --type signing --title "$(hostname)"
 
-# Configure git for this repo
 git config user.email "$(gh api user --jq '.id')+$(gh api user --jq '.login')@users.noreply.github.com"
 git config gpg.format ssh
 git config user.signingkey ~/.ssh/id_ed25519_signing.pub
 git config commit.gpgsign true
 git config tag.gpgsign true
 
-# Allow local verification with `git tag -v` / `git log --show-signature`
 mkdir -p ~/.config/git
-echo "$(git config user.email) $(cat ~/.ssh/id_ed25519_signing.pub | awk '{print $1, $2}')" >> ~/.config/git/allowed_signers
+echo "$(git config user.email) $(awk '{print $1, $2}' ~/.ssh/id_ed25519_signing.pub)" >> ~/.config/git/allowed_signers
 git config gpg.ssh.allowedSignersFile ~/.config/git/allowed_signers
 ```
 
