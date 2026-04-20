@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.6.0] — 2026-04-20
+
+### Added
+
 - Persistent path cache (`~/.cache/asimov/paths`) that stores discovered dependency paths across runs. Subsequent runs skip the full `find` traversal entirely, reducing runtime from ~75s to ~1-2s on typical home directories
 - Incremental Spotlight discovery via `mdfind` to find newly created projects without traversing the filesystem
 - `--full-scan` flag to force a full filesystem scan, ignoring any existing cache
@@ -190,6 +200,7 @@ Initial public release.
 
 
 [Unreleased]: https://github.com/django23/asimov/compare/v0.6.0...main
+[0.6.0]: https://github.com/django23/asimov/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/django23/asimov/compare/v0.4.0...v0.5.0
 [stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10
 [stevegrunwell/asimov#15]: https://github.com/stevegrunwell/asimov/pull/15
