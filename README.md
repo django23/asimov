@@ -33,14 +33,26 @@ make install
 
 ## Schedule
 
-Set up a daily launchd job so asimov runs automatically:
+Set up a daily launchd job so asimov runs automatically at midday:
 
 ```sh
 # Homebrew users:
 brew services start django23/tap/asimov
 
 # Manual/curl installs (already set up by the installer):
-launchctl load ~/Library/LaunchAgents/com.django23.asimov.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.django23.asimov.plist
+```
+
+To trigger a run immediately:
+
+```sh
+launchctl kickstart gui/$(id -u)/com.django23.asimov
+```
+
+To stop the scheduled job:
+
+```sh
+launchctl bootout gui/$(id -u)/com.django23.asimov
 ```
 
 Or run on demand: `asimov`

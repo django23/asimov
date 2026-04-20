@@ -35,6 +35,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Spotlight discovery uses temp files instead of bash string variables for large datasets — avoids slow `printf` on 15K-line strings
 - Spotlight discovery now runs descendant filter before exact-match filter and uses `sort`+`comm` instead of `grep -Fxvf` for set difference — BSD `grep -Fxvf` is O(n×m) and took 35s on 15K candidates; `sort`+`comm` is O(n log n) and takes <1s
 - Excluded-path filtering now uses a single bulk `grep -Fxvf` instead of per-path subprocess spawns
+- Default branch renamed to `main` (was `develop`); branch protection requires signed commits + passing CI
+- CI workflow now runs on every PR (including from forks), not just specific base branches
+- `make release` is now strict: requires clean tree, must be on `main`, signed tags only
+- Added `make bump-formula` to update the Homebrew tap (`django23/homebrew-tap`) after a release
 
 ### Fixed
 
@@ -185,7 +189,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.5.0...develop
+[Unreleased]: https://github.com/django23/asimov/compare/v0.6.0...main
 [0.5.0]: https://github.com/django23/asimov/compare/v0.4.0...v0.5.0
 [stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10
 [stevegrunwell/asimov#15]: https://github.com/stevegrunwell/asimov/pull/15
