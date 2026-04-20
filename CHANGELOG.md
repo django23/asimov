@@ -14,6 +14,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
+## [0.6.1] — 2026-04-20
+
+### Changed
+
+- README: moved Usage section above Schedule so the core command reference comes before scheduling details
+
 ## [0.6.0] — 2026-04-20
 
 ### Added
@@ -199,7 +205,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.6.0...main
+[Unreleased]: https://github.com/django23/asimov/compare/v0.6.1...main
+[0.6.1]: https://github.com/django23/asimov/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/django23/asimov/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/django23/asimov/compare/v0.4.0...v0.5.0
 [stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10

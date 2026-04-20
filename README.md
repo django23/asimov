@@ -31,6 +31,20 @@ cd asimov
 make install
 ```
 
+## Usage
+
+```
+asimov [--dry-run] [--verbose] [--quiet] [--help] [--version]
+```
+
+| Option | Description |
+|---|---|
+| `--dry-run` | Print what would be excluded without changing Time Machine |
+| `--verbose` | Show all directories including already-excluded ones |
+| `--quiet` | Suppress all output except errors |
+
+Or run on demand: `asimov`
+
 ## Schedule
 
 Set up a daily launchd job so asimov runs automatically at midday:
@@ -54,20 +68,6 @@ To stop the scheduled job:
 ```sh
 launchctl bootout gui/$(id -u)/com.django23.asimov
 ```
-
-Or run on demand: `asimov`
-
-## Usage
-
-```
-asimov [--dry-run] [--verbose] [--quiet] [--help] [--version]
-```
-
-| Option | Description |
-|---|---|
-| `--dry-run` | Print what would be excluded without changing Time Machine |
-| `--verbose` | Show all directories including already-excluded ones |
-| `--quiet` | Suppress all output except errors |
 
 ## What it does
 
