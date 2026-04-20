@@ -14,6 +14,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
+## [0.6.2] — 2026-04-20
+
+### Fixed
+
+- `SECURITY.md`: replaced invalid `django23@github.com` contact with the project maintainer's GitHub noreply address so vulnerability reports no longer bounce
+- README: Uninstall section used legacy `launchctl unload`; replaced with modern `launchctl bootout` to match the Schedule section
+
 ## [0.6.1] — 2026-04-20
 
 ### Changed
@@ -205,7 +212,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.6.1...main
+[Unreleased]: https://github.com/django23/asimov/compare/v0.6.2...main
+[0.6.2]: https://github.com/django23/asimov/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/django23/asimov/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/django23/asimov/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/django23/asimov/compare/v0.4.0...v0.5.0
