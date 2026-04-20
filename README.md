@@ -134,7 +134,7 @@ See [UPGRADING.md](UPGRADING.md) for migration instructions from v0.4.x or from 
 brew uninstall asimov                    # Homebrew
 # or
 rm ~/.local/bin/asimov                   # curl install
-launchctl unload ~/Library/LaunchAgents/com.django23.asimov.plist
+launchctl bootout gui/$(id -u)/com.django23.asimov
 # or
 make uninstall                           # manual install
 ```
