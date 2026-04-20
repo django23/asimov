@@ -1,7 +1,6 @@
 .DS_Store
-CLAUDE.md
 .worktrees
-.cursor
 .idea
 .vscode
 .cursor
+CLAUDE.md

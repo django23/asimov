@@ -13,10 +13,11 @@ if [[ -z "${ASIMOV_TEST_EXCLUSIONS:-}" ]]; then
 fi
 
 subcommand="${1:-}"
-path="${2:-}"
+shift || true
 
 case "$subcommand" in
   isexcluded)
+    path="${1:-}"
     if grep -Fxq "$path" "$ASIMOV_TEST_EXCLUSIONS" 2>/dev/null; then
       printf '[Excluded]\t%s\n' "$path"
     else
@@ -24,14 +25,20 @@ case "$subcommand" in
     fi
     ;;
   addexclusion)
-    # Simulate failure for paths listed in ASIMOV_TEST_TMUTIL_FAIL_PATHS
-    if [[ -n "${ASIMOV_TEST_TMUTIL_FAIL_PATHS:-}" && -f "${ASIMOV_TEST_TMUTIL_FAIL_PATHS}" ]]; then
-      if grep -Fxq "$path" "$ASIMOV_TEST_TMUTIL_FAIL_PATHS" 2>/dev/null; then
-        echo "Error (-50) while attempting to change exclusion setting." >&2
-        exit 1
+    # Supports multiple paths: tmutil addexclusion path1 path2 ...
+    for path in "$@"; do
+      # Simulate failure for paths listed in ASIMOV_TEST_TMUTIL_FAIL_PATHS
+      if [[ -n "${ASIMOV_TEST_TMUTIL_FAIL_PATHS:-}" && -f "${ASIMOV_TEST_TMUTIL_FAIL_PATHS}" ]]; then
+        if grep -Fxq "$path" "$ASIMOV_TEST_TMUTIL_FAIL_PATHS" 2>/dev/null; then
+          echo "Error (-50) while attempting to change exclusion setting." >&2
+          exit 1
+        fi
       fi
-    fi
-    printf '%s\n' "$path" >> "$ASIMOV_TEST_EXCLUSIONS"
+      # Idempotent: don't add if already present (matches real tmutil)
+      if ! grep -Fxq "$path" "$ASIMOV_TEST_EXCLUSIONS" 2>/dev/null; then
+        printf '%s\n' "$path" >> "$ASIMOV_TEST_EXCLUSIONS"
+      fi
+    done
     ;;
   *)
     echo "Unknown subcommand: $subcommand" >&2

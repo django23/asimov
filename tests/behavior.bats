@@ -181,16 +181,16 @@ load test_helper
   # Pre-exclude the first project manually
   echo "${HOME}/Code/Already-Excluded/node_modules" > "$ASIMOV_TEST_EXCLUSIONS"
 
-  # Tell mock mdfind to report it as already excluded
+  # Tell mock mdfind to report the exact path as already excluded
   ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
   export ASIMOV_TEST_MDFIND_RESULTS
-  echo "${HOME}/Code/Already-Excluded" > "$ASIMOV_TEST_MDFIND_RESULTS"
+  echo "${HOME}/Code/Already-Excluded/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
 
   run_asimov
 
   # The new project should be excluded
   assert_excluded "${HOME}/Code/New-Project/node_modules"
-  # The already-excluded one should still only have 1 entry (not duplicated)
+  # Total exclusions: 1 pre-existing + 1 newly added = 2
   [[ "$(count_exclusions)" -eq 2 ]]
 }
 
@@ -198,23 +198,34 @@ load test_helper
 # Fixed directories (global caches)
 # =============================================================================
 
-@test "excludes fixed directory when it exists" {
+@test "does not exclude fixed directories by default (no config)" {
   mkdir -p "${HOME}/.cache"
+  run_asimov
+  refute_excluded "${HOME}/.cache"
+}
+
+@test "excludes fixed directory when config enables them" {
+  mkdir -p "${HOME}/.cache"
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   assert_excluded "${HOME}/.cache"
 }
 
 @test "does not fail when fixed directory does not exist" {
-  # Don't create any fixed dirs — asimov should still succeed
-  run_asimov
+  write_config "[fixed_dirs]
+enabled = true"
+  run_asimov --no-cache
   [[ "$status" -eq 0 ]]
   [[ "$(count_exclusions)" -eq 0 ]]
 }
 
-@test "excludes multiple fixed directories when they exist" {
+@test "excludes multiple fixed directories when config enables them" {
   mkdir -p "${HOME}/.cache"
   mkdir -p "${HOME}/.gradle/caches"
   mkdir -p "${HOME}/.npm/_cacache"
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   assert_excluded "${HOME}/.cache"
   assert_excluded "${HOME}/.gradle/caches"
@@ -224,6 +235,8 @@ load test_helper
 
 @test "does not re-exclude already excluded fixed directory" {
   mkdir -p "${HOME}/.cache"
+  write_config "[fixed_dirs]
+enabled = true"
   run_asimov
   assert_excluded "${HOME}/.cache"
   local first_count
@@ -237,6 +250,73 @@ load test_helper
 }
 
 # =============================================================================
+# Config file
+# =============================================================================
+
+@test "config: missing config file is silently ignored" {
+  run_asimov
+  [[ "$status" -eq 0 ]]
+}
+
+@test "config: unknown section is silently ignored" {
+  write_config "[unknown_section]
+foo = bar"
+  run_asimov
+  [[ "$status" -eq 0 ]]
+}
+
+@test "config: unknown key is silently ignored" {
+  write_config "[fixed_dirs]
+unknown_key = value"
+  run_asimov
+  [[ "$status" -eq 0 ]]
+}
+
+@test "config: extra fixed dir is excluded" {
+  mkdir -p "${HOME}/.custom-cache"
+  write_config "[fixed_dirs]
+extra = ~/.custom-cache"
+  run_asimov
+  assert_excluded "${HOME}/.custom-cache"
+}
+
+@test "config: extra fixed dir is excluded even when fixed_dirs disabled" {
+  mkdir -p "${HOME}/.custom-cache"
+  write_config "[fixed_dirs]
+enabled = false
+extra = ~/.custom-cache"
+  run_asimov
+  assert_excluded "${HOME}/.custom-cache"
+}
+
+@test "config: multiple extra fixed dirs" {
+  mkdir -p "${HOME}/.cache-a"
+  mkdir -p "${HOME}/.cache-b"
+  write_config "[fixed_dirs]
+extra = ~/.cache-a
+extra = ~/.cache-b"
+  run_asimov
+  assert_excluded "${HOME}/.cache-a"
+  assert_excluded "${HOME}/.cache-b"
+}
+
+@test "config: extra sentinel pair triggers exclusion" {
+  create_project "Code/My-Project" "custom.config" ".custom-deps"
+  write_config "[sentinels]
+extra = .custom-deps custom.config"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.custom-deps"
+}
+
+@test "config: disabled sentinel pair is skipped" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  write_config "[sentinels]
+disabled = node_modules package.json"
+  run_asimov
+  refute_excluded "${HOME}/Code/My-Project/node_modules"
+}
+
+# =============================================================================
 # Summary output
 # =============================================================================
 
@@ -244,6 +324,14 @@ load test_helper
   create_project "Code/Project-A" "package.json" "node_modules"
   create_project "Code/Project-B" "composer.json" "vendor"
   run_asimov
+  [[ "$output" == *"Excluded 2 directories"* ]]
+  [[ "$output" != *"totalling"* ]]
+}
+
+@test "prints summary with count and total size when --stats is set" {
+  create_project "Code/Project-A" "package.json" "node_modules"
+  create_project "Code/Project-B" "composer.json" "vendor"
+  run_asimov --stats
   [[ "$output" == *"Excluded 2 directories"* ]]
   [[ "$output" == *"totalling"* ]]
   [[ "$output" =~ totalling\ .*[KMG]\. ]]
@@ -259,7 +347,12 @@ load test_helper
   run_asimov
   assert_excluded "${HOME}/Code/My-Project/node_modules"
 
-  # Run again — everything is already excluded
+  # Simulate mdfind reporting the already-excluded path (as real macOS would)
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  # Run again — everything is already excluded and filtered by cache lookup
   run_asimov
   [[ "$output" == *"No new directories to exclude"* ]]
 }
@@ -312,6 +405,8 @@ load test_helper
   [[ "$output" == *"Usage:"* ]]
   [[ "$output" == *"asimov"* ]]
   [[ "$output" == *"--dry-run"* ]]
+  [[ "$output" == *"--verbose"* ]]
+  [[ "$output" == *"--quiet"* ]]
 }
 
 @test "version option prints version and exits 0" {
@@ -328,6 +423,102 @@ load test_helper
   [[ "$output" == *"Usage:"* ]]
 }
 
+@test "scans a specified directory instead of home" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  mkdir -p "${HOME}/Other-Project"
+  run_asimov "${HOME}/Code"
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+}
+
+@test "exits with error for non-existent directory argument" {
+  run_asimov /does/not/exist
+  [[ "$status" -eq 1 ]]
+  [[ "$output" =~ "not a directory" ]]
+}
+
+# =============================================================================
+# --verbose
+# =============================================================================
+
+@test "default output hides already-excluded messages" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+
+  # Simulate mdfind reporting the already-excluded path
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  # Run again — directory is already excluded but message is hidden without --verbose
+  run_asimov
+  [[ "$output" != *"already excluded"* ]]
+}
+
+@test "verbose shows already-excluded messages" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+
+  # Simulate mdfind reporting the already-excluded path
+  ASIMOV_TEST_MDFIND_RESULTS="${TEST_TEMP_DIR}/.mdfind_results"
+  export ASIMOV_TEST_MDFIND_RESULTS
+  echo "${HOME}/Code/My-Project/node_modules" > "$ASIMOV_TEST_MDFIND_RESULTS"
+
+  # Run again with --verbose
+  run_asimov --verbose
+  [[ "$output" == *"already excluded"* ]]
+}
+
+# =============================================================================
+# --quiet
+# =============================================================================
+
+@test "quiet mode suppresses all non-error output" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --quiet
+  [[ "$status" -eq 0 ]]
+  [[ -z "$output" ]]
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+}
+
+@test "quiet mode still shows errors on stderr" {
+  create_project "Code/Bad-Project" "package.json" "node_modules"
+
+  ASIMOV_TEST_TMUTIL_FAIL_PATHS="${TEST_TEMP_DIR}/.tmutil_fail_paths"
+  export ASIMOV_TEST_TMUTIL_FAIL_PATHS
+  echo "${HOME}/Code/Bad-Project/node_modules" > "$ASIMOV_TEST_TMUTIL_FAIL_PATHS"
+
+  run_asimov --quiet
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"failed to exclude"* ]]
+}
+
+@test "quiet and verbose together exits with error" {
+  run_asimov --quiet --verbose
+  [[ "$status" -eq 1 ]]
+  [[ "$output" == *"mutually exclusive"* ]]
+}
+
+# =============================================================================
+# Flag combinations
+# =============================================================================
+
+@test "dry-run with verbose shows would-exclude messages" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --dry-run --verbose
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Would exclude"* ]]
+  [[ "$output" == *"node_modules"* ]]
+}
+
+@test "dry-run with quiet suppresses output" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --dry-run --quiet
+  [[ "$status" -eq 0 ]]
+  [[ -z "$output" ]]
+}
+
 # =============================================================================
 # --dry-run
 # =============================================================================
@@ -338,10 +529,18 @@ load test_helper
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"Would exclude"* ]]
   [[ "$output" == *"node_modules"* ]]
-  # Summary line must show would-exclude and a size (K, M, or G)
   [[ "$output" == *"Would exclude"*"directories"* ]]
+  [[ "$output" != *"totalling"* ]]
+  # Mock tmutil should not have recorded any exclusion
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
+@test "dry-run with --stats shows size in per-path output and total" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov --dry-run --stats
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Would exclude"* ]]
   [[ "$output" == *"totalling"* ]]
   [[ "$output" =~ totalling\ [0-9]+[KMG]\. ]]
-  # Mock tmutil should not have recorded any exclusion
   [[ "$(count_exclusions)" -eq 0 ]]
 }

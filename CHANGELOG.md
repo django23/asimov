@@ -14,6 +14,79 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
+## [0.6.0] — 2026-04-20
+
+### Added
+
+- Persistent path cache (`~/.cache/asimov/paths`) that stores discovered dependency paths across runs. Subsequent runs skip the full `find` traversal entirely, reducing runtime from ~75s to ~1-2s on typical home directories
+- Incremental Spotlight discovery via `mdfind` to find newly created projects without traversing the filesystem
+- `--full-scan` flag to force a full filesystem scan, ignoring any existing cache
+- `--no-cache` flag to run a full scan without reading or writing cache
+- `--stats` flag to show per-directory sizes and a total-space summary (opt-in, replaces previous always-on behaviour)
+- Optional positional `[directory]` argument to scope the scan to a specific directory instead of the full home directory
+- `make bench` target to compare dry-run timing against `tests/fixture/` across versions
+- `make bench-home` target to compare dry-run timing against the real home directory across versions
+- `tests/fixture/` directory with representative project structures for correctness checks and benchmarking
+- Persistent excluded-path state (`~/.cache/asimov/excluded`) that tracks successful `tmutil addexclusion` calls across runs. Handles interrupted runs and Spotlight indexing delays — paths excluded in a previous run are never re-excluded, even if Spotlight hasn't indexed them yet
+- Persistent failed-path state (`~/.cache/asimov/failed`) that remembers paths where `tmutil addexclusion` fails (e.g. Go module paths with `@` characters). Failed paths are automatically skipped on subsequent runs instead of retrying; use `--full-scan` to retry
+- Persistent mdfind-seen cache (`~/.cache/asimov/mdfind_seen`) that remembers all candidates checked by Spotlight discovery. Directories without sentinels (false positives) are not re-checked on subsequent runs, eliminating ~1,200 redundant sentinel lookups per cached run
+
+### Changed
+
+- Default run with an existing cache now uses the cache instead of a full `find` traversal; use `--full-scan` to force re-traversal
+- Directory sizes and "totalling" summary are no longer computed by default; use `--stats` to enable them. Removes the `du -sk` call per matched directory, significantly reducing wall-clock time on large home directories.
+- Already-excluded paths are now filtered via a fast cache lookup (`grep`) instead of adding per-path `-not -prune` clauses to `find`. Removes the O(directories × excluded_paths) overhead that dominated scan time on large home directories. Speed improvements of 37%
+- `tmutil addexclusion` uses per-path calls instead of batch to avoid wasting minutes when a single path fails (e.g. Go module paths with `@` characters). Batch mode provided no speed benefit — tmutil processes paths sequentially at ~11s each regardless
+- Paths that are descendants of fixed dirs (e.g. `~/.cache`) are skipped during sentinel-based exclusion since the fixed dir will be excluded unconditionally
+- Nested dependency paths are automatically deduplicated — if a parent directory is excluded, its descendants are skipped since Time Machine exclusions are recursive
+- Full scan now streams `find` output through `tee` to write the cache incrementally; an interrupted scan leaves a partial cache that accelerates the next run
+- Spotlight incremental discovery now bulk-filters cached paths with a single `grep -Fxvf` instead of one `grep` subprocess per candidate, and uses bash parameter expansion instead of `dirname`/`basename` subprocesses — eliminates ~27,000 subprocess spawns on typical home directories
+- Spotlight discovery now prefix-filters candidates nested under cached paths before sentinel checking — eliminates thousands of redundant sentinel lookups (e.g. `node_modules/dep/node_modules` under an already-cached `node_modules`)
+- Spotlight discovery uses temp files instead of bash string variables for large datasets — avoids slow `printf` on 15K-line strings
+- Spotlight discovery now runs descendant filter before exact-match filter and uses `sort`+`comm` instead of `grep -Fxvf` for set difference — BSD `grep -Fxvf` is O(n×m) and took 35s on 15K candidates; `sort`+`comm` is O(n log n) and takes <1s
+- Excluded-path filtering now uses a single bulk `grep -Fxvf` instead of per-path subprocess spawns
+- Default branch renamed to `main` (was `develop`); branch protection requires signed commits + passing CI
+- CI workflow now runs on every PR (including from forks), not just specific base branches
+- `make release` is now strict: requires clean tree, must be on `main`, signed tags only
+- Added `make bump-formula` to update the Homebrew tap (`django23/homebrew-tap`) after a release
+
+### Fixed
+
+### Removed
+
+## [0.5.0] — 2026-03-02
+
+### Added
+
+- `--quiet` flag to suppress all non-error output
+- `--verbose` flag to show already-excluded directories (hidden by default)
+- Config file support (`~/.config/asimov/config`) for enabling fixed dirs, adding extra dirs/sentinels, and disabling built-in sentinels
+- Curl-based installer (`scripts/install-remote.sh`) for non-Homebrew users
+- Unit tests for `format_size_kb()` boundary values
+- Flag combination tests (`--dry-run --verbose`, `--dry-run --quiet`)
+- GitHub issue/PR templates
+- `SECURITY.md` with private vulnerability reporting instructions
+- `UPGRADING.md` with migration guide from v0.4.x and original asimov
+
+### Changed
+
+- **BREAKING:** Fixed dirs (global caches) are now opt-in via config file (previously always on)
+- **BREAKING:** LaunchAgent label renamed from `com.stevegrunwell.asimov` to `com.django23.asimov`
+- Colors are now disabled when stdout is not a terminal (e.g. launchd, pipes)
+- `tmutil isexcluded` check removed from default path (now `--verbose`-only); mdfind optimization already prunes excluded paths
+- `record_excluded_path()` calls `du` once instead of twice per path
+- `format_size_kb()` uses bash arithmetic instead of spawning `awk`
+- Simplified `print_exclusion_summary()` to a single printf with early return
+- Removed stale `@version` header comment
+- Removed unnecessary defensive guards on always-initialized variables
+- Mock tmutil now idempotent (matches real tmutil behavior)
+- README rewritten with concise install-first structure
+- Updated all repo URLs from stevegrunwell/asimov to django23/asimov
+
+### Removed
+
+- `tmutil isexcluded` per-path check in default (non-verbose) mode
+
 ## [0.4.0] — 2025-02-20
 
 ### Added
@@ -126,7 +199,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.4.0...improvements
+[Unreleased]: https://github.com/django23/asimov/compare/v0.6.0...main
+[0.6.0]: https://github.com/django23/asimov/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/django23/asimov/compare/v0.4.0...v0.5.0
 [stevegrunwell/asimov#10]: https://github.com/stevegrunwell/asimov/issues/10
 [stevegrunwell/asimov#15]: https://github.com/stevegrunwell/asimov/pull/15
 [stevegrunwell/asimov#16]: https://github.com/stevegrunwell/asimov/pull/16

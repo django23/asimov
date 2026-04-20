@@ -65,3 +65,112 @@ refute_excluded() {
     return 1
   fi
 }
+
+# Write a config file for testing.
+#
+# Usage: write_config "config file contents"
+#
+# Example: write_config "[fixed_dirs]
+# enabled = true"
+write_config() {
+    local config_dir="${HOME}/.config/asimov"
+    mkdir -p "$config_dir"
+    printf '%s\n' "$1" > "${config_dir}/config"
+}
+
+# Write a path cache file for testing.
+#
+# Usage: write_path_cache "path1" "path2" ...
+write_path_cache() {
+    local cache_dir="${HOME}/.cache/asimov"
+    mkdir -p "$cache_dir"
+    {
+        echo "# asimov path cache — updated 2026-01-01T00:00:00Z"
+        for path in "$@"; do
+            echo "$path"
+        done
+    } > "${cache_dir}/paths"
+}
+
+# Read the path cache file, stripping comments and blank lines.
+read_path_cache() {
+    local cache_file="${HOME}/.cache/asimov/paths"
+    [[ -f "$cache_file" ]] || return 0
+    grep -v '^#' "$cache_file" | grep -v '^$' || true
+}
+
+# Assert that a path is present in the path cache.
+assert_cached() {
+    local path="$1"
+    local cache_file="${HOME}/.cache/asimov/paths"
+    if [[ ! -f "$cache_file" ]]; then
+        echo "Expected cache file to exist, but it does not." >&2
+        return 1
+    fi
+    if ! grep -Fxq "$path" "$cache_file"; then
+        echo "Expected '$path' to be in cache, but it was not." >&2
+        echo "Cache contents:" >&2
+        cat "$cache_file" >&2
+        return 1
+    fi
+}
+
+# Assert that a path is NOT present in the path cache.
+refute_cached() {
+    local path="$1"
+    local cache_file="${HOME}/.cache/asimov/paths"
+    if [[ ! -f "$cache_file" ]]; then
+        return 0
+    fi
+    if grep -Fxq "$path" "$cache_file"; then
+        echo "Expected '$path' to NOT be in cache, but it was." >&2
+        echo "Cache contents:" >&2
+        cat "$cache_file" >&2
+        return 1
+    fi
+}
+
+# Write a failed-path state file for testing.
+#
+# Usage: write_failed_state "path1" "path2" ...
+write_failed_state() {
+    local cache_dir="${HOME}/.cache/asimov"
+    mkdir -p "$cache_dir"
+    printf '%s\n' "$@" > "${cache_dir}/failed"
+}
+
+# Assert that a path is present in the failed-path state.
+assert_failed() {
+    local path="$1"
+    local failed_file="${HOME}/.cache/asimov/failed"
+    if [[ ! -f "$failed_file" ]]; then
+        echo "Expected failed state file to exist, but it does not." >&2
+        return 1
+    fi
+    if ! grep -Fxq "$path" "$failed_file"; then
+        echo "Expected '$path' to be in failed state, but it was not." >&2
+        echo "Failed state contents:" >&2
+        cat "$failed_file" >&2
+        return 1
+    fi
+}
+
+# Assert that a path is NOT present in the failed-path state.
+refute_failed() {
+    local path="$1"
+    local failed_file="${HOME}/.cache/asimov/failed"
+    [[ -f "$failed_file" ]] || return 0
+    if grep -Fxq "$path" "$failed_file"; then
+        echo "Expected '$path' to NOT be in failed state, but it was." >&2
+        echo "Failed state contents:" >&2
+        cat "$failed_file" >&2
+        return 1
+    fi
+}
+
+# Load format_size_kb and its constants for unit testing.
+# Extracts just the constants and function from the main script
+# without executing the rest of the script.
+load_format_size_kb() {
+    eval "$(awk '/^readonly ASIMOV_KB_PER/; /^format_size_kb\(\)/,/^}/' "${BATS_TEST_DIRNAME}/../asimov")"
+}
