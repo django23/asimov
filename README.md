@@ -3,6 +3,8 @@
 Exclude development dependencies from Time Machine backups. Automatically.
 
 [![Tests](https://github.com/django23/asimov/actions/workflows/tests.yml/badge.svg)](https://github.com/django23/asimov/actions/workflows/tests.yml)
+[![Latest release](https://img.shields.io/github/v/release/django23/asimov?sort=semver&color=blue)](https://github.com/django23/asimov/releases)
+[![Stars](https://img.shields.io/github/stars/django23/asimov?style=flat)](https://github.com/django23/asimov/stargazers)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT201250)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
 [![Shell: Bash](https://img.shields.io/badge/shell-bash-4EAA25?logo=gnubash&logoColor=white)](asimov)

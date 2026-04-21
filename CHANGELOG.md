@@ -14,6 +14,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
+## [0.6.3] — 2026-04-21
+
+### Changed
+
+- README: added "Latest release" and "Stars" badges alongside the existing Tests / macOS / License / Shell badges so progress and social proof are visible at a glance
+
 ## [0.6.2] — 2026-04-20
 
 ### Fixed
@@ -212,7 +218,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.6.2...main
+[Unreleased]: https://github.com/django23/asimov/compare/v0.6.3...main
+[0.6.3]: https://github.com/django23/asimov/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/django23/asimov/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/django23/asimov/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/django23/asimov/compare/v0.5.0...v0.6.0
