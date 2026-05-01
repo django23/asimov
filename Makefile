@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help test lint check bench bench-home install uninstall exclusions version release release-beta bump-formula
+.PHONY: help test lint check bench bench-home install uninstall exclusions version prep-release release release-beta bump-formula ship-formula verify-release
 
 TAP_DIR ?= ../homebrew-tap
 
@@ -22,7 +22,7 @@ test: ## Run Bats tests
 	@bats tests/sentinels.bats tests/behavior.bats tests/cache.bats tests/format.bats tests/plist.bats
 
 lint: ## Run Shellcheck on all shell scripts
-	@shellcheck asimov scripts/install.sh scripts/install-remote.sh scripts/uninstall.sh tests/test_helper.bash tests/bin/run-tests.sh tests/bin/tmutil tests/bin/mdfind
+	@shellcheck asimov scripts/install.sh scripts/install-remote.sh scripts/uninstall.sh scripts/prep-release.sh tests/test_helper.bash tests/bin/run-tests.sh tests/bin/tmutil tests/bin/mdfind
 
 check: test lint ## Run tests and linting
 
@@ -62,6 +62,9 @@ uninstall: ## Uninstall Asimov and remove launchd schedule (NAME=asimov2 to remo
 ## —————————— 🚀 Release ———————————————————————————————————————
 
 
+prep-release: ## Prepare a release PR (bump version, promote CHANGELOG, branch+commit). Usage: make prep-release VERSION=X.Y.Z
+	@VERSION="$(VERSION)" scripts/prep-release.sh
+
 release: check ## Tag and push a stable release — GitHub Actions will create the release
 	@set -e; \
 	if [ -n "$$(git status --porcelain)" ]; then echo "error: working tree not clean"; exit 1; fi; \
@@ -74,7 +77,7 @@ release: check ## Tag and push a stable release — GitHub Actions will create t
 	git tag -s "$$TAG" -m "Release $$TAG"; \
 	git push origin "$$TAG"; \
 	echo "Tag $$TAG pushed — GitHub Actions will create the release."; \
-	echo "Next: run 'make bump-formula' once the release tarball is available."
+	echo "Next: run 'make ship-formula' to wait for release.yml, bump the tap formula, and push."
 
 release-beta: check ## Tag and push a beta pre-release — GitHub Actions will create the pre-release
 	@set -e; \
@@ -109,3 +112,22 @@ bump-formula: ## Update the Homebrew tap formula to match the current asimov ver
 	  git add Formula/asimov.rb && \
 	  git commit -S -m "asimov $$VERSION" && \
 	  echo "Review the commit in $(TAP_DIR), then: cd $(TAP_DIR) && git push" )
+
+ship-formula: ## Wait for release.yml to finish, then bump-formula and push the tap
+	@set -e; \
+	echo "Waiting 15s for GitHub to register the release.yml run..."; \
+	sleep 15; \
+	RUN_ID=$$(gh run list --workflow=release.yml --limit=1 --json databaseId -q '.[0].databaseId'); \
+	if [ -z "$$RUN_ID" ]; then echo "error: no release.yml runs found — did 'make release' push the tag?"; exit 1; fi; \
+	echo "Watching run $$RUN_ID..."; \
+	gh run watch "$$RUN_ID" --exit-status; \
+	$(MAKE) bump-formula; \
+	echo "Pushing tap..."; \
+	( cd "$(TAP_DIR)" && git push ); \
+	echo "✓ Formula updated and pushed."
+
+verify-release: ## brew upgrade asimov and print the installed version
+	@set -e; \
+	brew update; \
+	brew upgrade asimov || brew install django23/tap/asimov; \
+	asimov --version

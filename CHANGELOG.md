@@ -14,6 +14,23 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
+## [0.6.4] — 2026-05-01
+
+### Added
+
+- `make prep-release VERSION=X.Y.Z` (backed by `scripts/prep-release.sh`) — bumps `ASIMOV_VERSION`, promotes `[Unreleased]` in CHANGELOG with compare links, runs `make check`, and commits on a `release/X.Y.Z` branch. Removes the two manual edit steps that were the most error-prone part of the release flow
+- `make ship-formula` — waits for `release.yml` to finish, runs `bump-formula`, and pushes the Homebrew tap. Replaces the `sleep 6` + `gh run watch` recipe that previously lived only in CONTRIBUTING.md
+- `make verify-release` — `brew upgrade asimov` (or install) + `asimov --version`
+
+### Changed
+
+- CONTRIBUTING.md release flow trimmed from a 4-step prose narrative to ~10 commands; the orchestration now lives in Makefile targets so an AI agent (or human) can execute the release end-to-end without re-deriving sed scripts or watch loops
+- README rewritten with an outcome-first hook, worktree/AI-coding angle, and a "What you'll see" sample run; install moved above the explainer to lower friction, and the `--stats` flag is now documented in the Usage table
+
+### Fixed
+
+### Removed
+
 ## [0.6.3] — 2026-04-21
 
 ### Changed
@@ -218,7 +235,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.6.3...main
+[Unreleased]: https://github.com/django23/asimov/compare/v0.6.4...main
+[0.6.4]: https://github.com/django23/asimov/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/django23/asimov/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/django23/asimov/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/django23/asimov/compare/v0.6.0...v0.6.1
