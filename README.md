@@ -2,12 +2,12 @@
 
 **Stop backing up files you'll never restore.**
 
-[Tests](https://github.com/django23/asimov/actions/workflows/tests.yml)
-[Latest release](https://github.com/django23/asimov/releases)
-[Stars](https://github.com/django23/asimov/stargazers)
-[macOS 14+](https://support.apple.com/en-us/HT201250)
-[License: MIT](LICENSE.txt)
-[Shell: Bash](asimov)
+[![Tests](https://github.com/django23/asimov/actions/workflows/tests.yml/badge.svg)](https://github.com/django23/asimov/actions/workflows/tests.yml)
+[![Latest release](https://img.shields.io/github/v/release/django23/asimov?sort=semver&color=blue)](https://github.com/django23/asimov/releases)
+[![Stars](https://img.shields.io/github/stars/django23/asimov?style=flat)](https://github.com/django23/asimov/stargazers)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT201250)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.txt)
+[![Shell: Bash](https://img.shields.io/badge/shell-bash-4EAA25?logo=gnubash&logoColor=white)](asimov)
 
 Every Time Machine snapshot copies your `node_modules`, `.venv`, `target`, `DerivedData`; gigabytes of files you can rebuild with one command. With git worktrees and AI coding agents spinning up parallel copies of every project, that waste compounds fast.
 

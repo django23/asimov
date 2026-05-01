@@ -8,9 +8,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- CONTRIBUTING.md: troubleshooting entry for `make prep-release` failing on a dirty tree when the uncommitted changes ARE the release content (manual fallback)
+
 ### Changed
 
+- Makefile pins `gh` to `django23/asimov` via `export GH_REPO`, so a configured `upstream` remote (e.g. `stevegrunwell/asimov`) can no longer hijack release-flow gh calls. Surfaced during the 0.6.4 release when `make ship-formula` 404'd against the upstream `release.yml` and `gh pr create --fill` failed to compute a diff range
+- `make verify-release` now invokes `$(brew --prefix asimov)/bin/asimov --version` directly instead of bare `asimov`, so an older binary earlier on `PATH` no longer hides the freshly-installed version
+
 ### Fixed
+
+- README badges restored — the 0.6.4 README rewrite stripped the `![…](badge.svg)` image syntax, leaving plain text links instead of the Tests / Latest release / Stars / macOS / License / Shell shields
 
 ### Removed
 
