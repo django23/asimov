@@ -158,6 +158,8 @@ make release                                  # re-tags from current main
 
 **You merged the PR but `make release` aborts with "working tree not clean".** Run `git status` — you likely have a stray local file. `git stash` it and retry.
 
+**`make prep-release` fails with "working tree not clean" but the dirty files ARE the release.** `prep-release` assumes the version bump comes first and the substantive changes follow. If your work is already uncommitted, do it manually: branch (`git checkout -b release/X.Y.Z`), commit your changes, then bump `ASIMOV_VERSION` in `asimov` and run the awk block from `scripts/prep-release.sh` against `CHANGELOG.md` to promote `[Unreleased]` and add the compare links. Run `make check`, commit, push, open the PR.
+
 ### SSH-signed commits (one-time per clone)
 
 ```sh

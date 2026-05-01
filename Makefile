@@ -3,6 +3,11 @@
 
 TAP_DIR ?= ../homebrew-tap
 
+# Pin gh to this repo so a configured `upstream` remote (e.g. stevegrunwell/asimov)
+# never wins remote-detection — bit us in 0.6.4 when ship-formula hit the upstream
+# release.yml and 404'd. Override with `GH_REPO=other/repo make ...` if needed.
+export GH_REPO ?= django23/asimov
+
 ## —————————— 🎵 Asimov 🎵 ————————————————————————————————————
 
 help: ## Show this help
@@ -130,4 +135,4 @@ verify-release: ## brew upgrade asimov and print the installed version
 	@set -e; \
 	brew update; \
 	brew upgrade asimov || brew install django23/tap/asimov; \
-	asimov --version
+	"$$(brew --prefix asimov)/bin/asimov" --version
