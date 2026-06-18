@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.7.0] — 2026-06-18
+
+### Added
+
 - moonrepo: exclude `.moon/cache` when a `workspace.yml` sits beside it
 - CONTRIBUTING.md: troubleshooting entry for `make prep-release` failing on a dirty tree when the uncommitted changes ARE the release content (manual fallback)
 
@@ -244,7 +254,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.6.4...main
+[Unreleased]: https://github.com/django23/asimov/compare/v0.7.0...main
+[0.7.0]: https://github.com/django23/asimov/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/django23/asimov/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/django23/asimov/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/django23/asimov/compare/v0.6.1...v0.6.2
