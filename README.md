@@ -78,7 +78,7 @@ This means Asimov never touches a folder that just happens to share a common nam
 | **Game dev**                | `.godot`                                                                                                                         |
 | **Global caches** (opt-in)  | `~/.cache`, `~/.gradle/caches`, `~/.m2/repository`, `~/.npm/_cacache`, `~/.nuget/packages`, `~/.kube/cache`                      |
 
-
+**Don't see your tool?** You can teach Asimov your own directory + sentinel pairs in a couple of lines — no need to wait for a release. See [Add your own patterns](#add-your-own-patterns).
 
 
 ## Usage
@@ -109,16 +109,34 @@ Manual and curl installers set up the same launchd job automatically.
 
 ## Configuration
 
-Asimov works out of the box. For custom patterns or to enable global cache exclusions, drop a config at `~/.config/asimov/config`:
+Asimov works out of the box. To customize it, drop a config file at `~/.config/asimov/config`. The most useful thing you can do here is **teach it dependency directories of your own.**
+
+### Add your own patterns
+
+Using a tool Asimov doesn't know about yet? Add it yourself. Each pattern is a `directory sentinel` pair — exactly the same mechanism the [built-ins](#how-it-works) use: the directory is excluded **only** when the sentinel file sits right beside it, so it's safe even for common folder names.
+
+```ini
+[sentinels]
+extra = .cache my-tool.toml      # exclude .cache only when my-tool.toml is its sibling
+extra = generated codegen.yml    # one "extra =" line per pattern
+extra = dist *.podspec           # glob sentinels work too
+```
+
+Want to turn a built-in off? List its exact pair under `disabled`:
+
+```ini
+[sentinels]
+disabled = vendor Gemfile        # stop excluding Ruby's vendor/ directories
+```
+
+### Global caches (opt-in)
+
+Global tool caches in your home directory (`~/.cache`, `~/.gradle/caches`, …) are left alone by default. Opt in, and add paths of your own:
 
 ```ini
 [fixed_dirs]
-enabled = true                          # exclude global caches like ~/.cache
-extra   = ~/my-build-cache              # plus your own paths
-
-[sentinels]
-extra    = .custom-deps custom.config   # add custom dependency patterns
-disabled = vendor Gemfile               # disable a built-in pattern
+enabled = true                   # exclude the built-in global caches
+extra   = ~/my-build-cache       # plus any paths you name (always excluded when they exist)
 ```
 
 ## Other install methods
