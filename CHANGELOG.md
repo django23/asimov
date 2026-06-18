@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- `make bump-formula` no longer commits a bad Homebrew formula when the release tarball download fails. The old `curl … | shasum | awk` pipeline swallowed a failed `curl` (pipeline exit status came from `awk`), so a transient network error produced the SHA-256 of an empty string (`e3b0c4…b855`) — which slipped past the all-zeros guard and was committed/pushed to the tap, breaking `brew install`. Now downloads to a temp file with an explicit failure check, rejects an empty tarball, enables `pipefail`, and rejects the empty-string hash. Surfaced during the 0.7.0 release
+
 ### Removed
 
 ## [0.7.0] — 2026-06-18

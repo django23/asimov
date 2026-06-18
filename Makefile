@@ -99,14 +99,19 @@ release-beta: check ## Tag and push a beta pre-release — GitHub Actions will c
 	echo "Tag $$TAG pushed — GitHub Actions will create the pre-release."
 
 bump-formula: ## Update the Homebrew tap formula to match the current asimov version (TAP_DIR=../homebrew-tap)
-	@set -e; \
+	@set -eo pipefail; \
 	if [ ! -d "$(TAP_DIR)/Formula" ]; then echo "error: $(TAP_DIR)/Formula not found — clone django23/homebrew-tap to $(TAP_DIR)"; exit 1; fi; \
 	VERSION=$$(./asimov --version); \
 	TAG="v$$VERSION"; \
 	URL="https://github.com/django23/asimov/archive/refs/tags/$$TAG.tar.gz"; \
 	echo "Fetching $$URL ..."; \
-	SHA=$$(curl -fsSL "$$URL" | shasum -a 256 | awk '{print $$1}'); \
-	if [ -z "$$SHA" ] || [ "$$SHA" = "0000000000000000000000000000000000000000000000000000000000000000" ]; then echo "error: failed to compute sha256 (is the release published?)"; exit 1; fi; \
+	TARBALL=$$(mktemp); \
+	trap 'rm -f "$$TARBALL"' EXIT; \
+	if ! curl -fsSL "$$URL" -o "$$TARBALL"; then echo "error: download failed for $$URL (is the release published?)"; exit 1; fi; \
+	if [ ! -s "$$TARBALL" ]; then echo "error: downloaded tarball is empty — refusing to compute a hash"; exit 1; fi; \
+	SHA=$$(shasum -a 256 "$$TARBALL" | awk '{print $$1}'); \
+	EMPTY_SHA="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; \
+	if [ -z "$$SHA" ] || [ "$$SHA" = "$$EMPTY_SHA" ] || [ "$$SHA" = "0000000000000000000000000000000000000000000000000000000000000000" ]; then echo "error: refusing empty/zero sha256 (download likely failed; is the release published?)"; exit 1; fi; \
 	echo "sha256: $$SHA"; \
 	FORMULA="$(TAP_DIR)/Formula/asimov.rb"; \
 	/usr/bin/sed -i '' -E "s|url \"https://github.com/django23/asimov/archive/refs/tags/v[^\"]+\"|url \"$$URL\"|" "$$FORMULA"; \
