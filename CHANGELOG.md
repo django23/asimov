@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- moonrepo: exclude `.moon/cache` when a `workspace.yml` sits beside it
 - CONTRIBUTING.md: troubleshooting entry for `make prep-release` failing on a dirty tree when the uncommitted changes ARE the release content (manual fallback)
 
 ### Changed

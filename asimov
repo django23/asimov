@@ -555,6 +555,7 @@ readonly ASIMOV_VENDOR_DIR_SENTINELS=(
     '.svelte-kit svelte.config.js'     # SvelteKit (JavaScript)
     '.turbo turbo.json'                # Turborepo (JavaScript)
     '.yarn .yarnrc.yml'                # Yarn Berry cache (JavaScript)
+    'cache workspace.yml'              # moonrepo task cache (.moon/cache)
     'target Cargo.toml'                # Cargo (Rust)
     'target pom.xml'                   # Maven
     'target build.sbt'                 # Sbt (Scala)

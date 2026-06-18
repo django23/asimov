@@ -59,6 +59,7 @@ This means Asimov never touches a folder that just happens to share a common nam
 | Ecosystem                   | Directories excluded                                                                                                             |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | **JavaScript / TypeScript** | `node_modules`, `.next`, `.nuxt`, `.angular`, `.svelte-kit`, `.turbo`, `.yarn`, `.parcel-cache`, `bower_components`, `elm-stuff` |
+| **Monorepo**                | `.moon/cache`                                                                                                                    |
 | **Python**                  | `.venv`, `venv`, `.tox`, `.nox`, `__pypackages__`, `build`, `dist`                                                               |
 | **Rust**                    | `target`                                                                                                                         |
 | **Go**                      | `vendor`                                                                                                                         |

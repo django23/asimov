@@ -238,6 +238,22 @@ load test_helper
   [[ "$(count_exclusions)" -eq 1 ]]
 }
 
+# --- moonrepo ---
+
+@test "moonrepo: excludes cache when workspace.yml is present" {
+  create_project "Code/My-Project/.moon" "workspace.yml" "cache"
+  run_asimov
+  assert_excluded "${HOME}/Code/My-Project/.moon/cache"
+  [[ "$(count_exclusions)" -eq 1 ]]
+}
+
+@test "moonrepo: does not exclude cache without a workspace.yml sibling" {
+  mkdir -p "${HOME}/Code/My-Project/cache"
+  run_asimov
+  refute_excluded "${HOME}/Code/My-Project/cache"
+  [[ "$(count_exclusions)" -eq 0 ]]
+}
+
 # --- Rust ---
 
 @test "Cargo: excludes target when Cargo.toml is present" {
