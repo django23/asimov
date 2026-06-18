@@ -13,6 +13,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- README: surface user-defined sentinels prominently — a new **Add your own patterns** subsection explains the `directory sentinel` format with examples, and a pointer under the ecosystems table sends readers there. Custom exclusion patterns were already supported via `[sentinels] extra`; this just makes them discoverable
 - Makefile pins `gh` to `django23/asimov` via `export GH_REPO`, so a configured `upstream` remote (e.g. `stevegrunwell/asimov`) can no longer hijack release-flow gh calls. Surfaced during the 0.6.4 release when `make ship-formula` 404'd against the upstream `release.yml` and `gh pr create --fill` failed to compute a diff range
 - `make verify-release` now invokes `$(brew --prefix asimov)/bin/asimov --version` directly instead of bare `asimov`, so an older binary earlier on `PATH` no longer hides the freshly-installed version
 
