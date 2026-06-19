@@ -316,6 +316,18 @@ disabled = node_modules package.json"
   refute_excluded "${HOME}/Code/My-Project/node_modules"
 }
 
+@test "config: glob sentinel from config does not allow shell injection" {
+  # A malicious glob sentinel must not be able to run arbitrary commands when
+  # interpolated into the find -execdir sh -c check (S1 regression test).
+  local pwned="${BATS_TEST_TMPDIR:-$HOME}/pwned"
+  rm -f "$pwned"
+  create_project "Code/My-Project" "trigger.x" ".custom-deps"
+  write_config "[sentinels]
+extra = .custom-deps *.x'; touch ${pwned}; '"
+  run_asimov --full-scan
+  [[ ! -e "$pwned" ]]
+}
+
 # =============================================================================
 # Summary output
 # =============================================================================

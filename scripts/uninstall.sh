@@ -5,8 +5,8 @@
 # @author  Steve Grunwell
 # @license MIT
 
-# shellcheck disable=SC1090
-source "$(pwd -P)/$(dirname "$0")/vars"
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/vars"
 
 printf '\n\033[0;36mRemoving command %s\033[0m\n' "${BIN}"
 [[ -f ${BIN} ]] && rm "${BIN}"
