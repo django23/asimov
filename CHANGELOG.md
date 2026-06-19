@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- `--dry-run` now takes the exact same code path as a real run: it runs the read-only `tmutil isexcluded` ground-truth guard instead of stopping at the Spotlight cache, then prints `Would exclude` (and never persists state or calls `addexclusion`). Previously the preview over-reported, listing directories that a real run would skip — most visibly a dependency dir already covered by a manually excluded ancestor (e.g. `~/.nvm`), since path-based Time Machine exclusions aren't reported by Spotlight ([#19](https://github.com/django23/asimov/issues/19))
 - `make bump-formula` no longer commits a bad Homebrew formula when the release tarball download fails. The old `curl … | shasum | awk` pipeline swallowed a failed `curl` (pipeline exit status came from `awk`), so a transient network error produced the SHA-256 of an empty string (`e3b0c4…b855`) — which slipped past the all-zeros guard and was committed/pushed to the tap, breaking `brew install`. Now downloads to a temp file with an explicit failure check, rejects an empty tarball, enables `pipefail`, and rejects the empty-string hash. Surfaced during the 0.7.0 release
 
 ### Removed
