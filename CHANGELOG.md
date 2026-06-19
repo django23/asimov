@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.8.0] — 2026-06-19
+
+### Added
+
 - `--no-read-cache` and `--no-write-cache` flags that control the cache on two independent axes. `--no-read-cache` ignores all cached state (re-discovers and re-verifies everything, then rebuilds the cache); `--no-write-cache` reads the cache but persists nothing. `--full-scan` is now an alias for `--no-read-cache`, and `--no-cache` an alias for both together — both kept for backwards compatibility
 
 ### Changed
@@ -267,7 +277,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 Initial public release.
 
 
-[Unreleased]: https://github.com/django23/asimov/compare/v0.7.0...main
+[Unreleased]: https://github.com/django23/asimov/compare/v0.8.0...main
+[0.8.0]: https://github.com/django23/asimov/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/django23/asimov/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/django23/asimov/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/django23/asimov/compare/v0.6.2...v0.6.3
