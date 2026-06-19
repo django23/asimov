@@ -85,16 +85,24 @@ This means Asimov never touches a folder that just happens to share a common nam
 ## Usage
 
 ```
-asimov [--dry-run] [--verbose] [--quiet] [--stats] [--help] [--version]
+asimov [--dry-run] [--verbose] [--quiet] [--stats] [--no-read-cache] [--no-write-cache] [--help] [--version]
 ```
 
 
-| Option      | Description                                                |
-| ----------- | ---------------------------------------------------------- |
-| `--dry-run` | Print what would be excluded without changing Time Machine |
-| `--verbose` | Show all directories including already-excluded ones       |
-| `--quiet`   | Suppress all output except errors                          |
-| `--stats`   | Show per-directory sizes and a total-space summary         |
+| Option              | Description                                                       |
+| ------------------- | ---------------------------------------------------------------- |
+| `--dry-run`         | Print what would be excluded without changing Time Machine       |
+| `--verbose`         | Show all directories including already-excluded ones             |
+| `--quiet`           | Suppress all output except errors                                |
+| `--stats`           | Show per-directory sizes and a total-space summary               |
+| `--no-read-cache`   | Ignore cached state; re-discover and re-verify everything, then rebuild the cache |
+| `--no-write-cache`  | Run normally but don't persist any cache updates                 |
+
+Asimov keeps a cache under `~/.cache/asimov/` so repeat runs are near-instant. The two flags above control it on independent axes — reading and writing:
+
+- `--no-read-cache` — *"rebuild."* Ignores everything cached, re-scans the filesystem, and re-verifies every directory against Time Machine, then writes a fresh cache. **`--full-scan` is an alias.**
+- `--no-write-cache` — *"don't touch state."* Uses the fast cache to read, but persists nothing. Handy with `--dry-run`.
+- Both together = a fully stateless run that reads and writes nothing. **`--no-cache` is an alias for this.**
 
 
 ## Schedule
