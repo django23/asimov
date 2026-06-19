@@ -30,22 +30,24 @@ trap 'rm -f "$ASIMOV_SIZE_LOG" "$ASIMOV_EXCLUDED_CACHE" "$ASIMOV_PATH_CACHE_TMP"
 readonly ASIMOV_VERSION='0.7.0'
 
 print_usage() {
-    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [--stats] [--full-scan] [--no-cache] [directory]\n'
+    printf 'Usage: asimov [--dry-run] [--verbose] [--quiet] [--stats] [--no-read-cache] [--no-write-cache] [directory]\n'
     printf '\n'
     printf 'Exclude development dependency directories from Time Machine backups.\n'
     printf '\n'
     printf 'Options:\n'
-    printf '  --dry-run     Print what would be excluded without changing Time Machine\n'
-    printf '  --verbose     Show all directories including already-excluded ones\n'
-    printf '  --quiet       Suppress all output except errors\n'
-    printf '  --stats       Show directory sizes and total space in the summary\n'
-    printf '  --full-scan   Force a full filesystem scan, ignoring any existing cache\n'
-    printf '  --no-cache    Run a full scan without reading or writing cache\n'
-    printf '  --help        Show this help and exit\n'
-    printf '  --version     Show version and exit\n'
+    printf '  --dry-run          Print what would be excluded without changing Time Machine\n'
+    printf '  --verbose          Show all directories including already-excluded ones\n'
+    printf '  --quiet            Suppress all output except errors\n'
+    printf '  --stats            Show directory sizes and total space in the summary\n'
+    printf '  --no-read-cache    Ignore cached state; re-discover and re-verify everything (rebuilds the cache)\n'
+    printf '  --no-write-cache   Run normally but do not persist any cache updates\n'
+    printf '  --full-scan        Alias for --no-read-cache\n'
+    printf '  --no-cache         Alias for --no-read-cache --no-write-cache (fully stateless run)\n'
+    printf '  --help             Show this help and exit\n'
+    printf '  --version          Show version and exit\n'
     printf '\n'
     printf 'Arguments:\n'
-    printf '  directory     Directory to scan (default: home directory)\n'
+    printf '  directory          Directory to scan (default: home directory)\n'
 }
 
 # Parse options (before we need ASIMOV_ROOT).
@@ -54,8 +56,8 @@ ASIMOV_DRY_RUN=
 ASIMOV_VERBOSE=
 ASIMOV_QUIET=
 ASIMOV_STATS=
-ASIMOV_FULL_SCAN=
-ASIMOV_NO_CACHE=
+ASIMOV_NO_READ_CACHE=
+ASIMOV_NO_WRITE_CACHE=
 ASIMOV_SCAN_DIR=
 for arg in "$@"; do
     case "$arg" in
@@ -63,8 +65,12 @@ for arg in "$@"; do
         --verbose)    ASIMOV_VERBOSE=1 ;;
         --quiet)      ASIMOV_QUIET=1 ;;
         --stats)      ASIMOV_STATS=1 ;;
-        --full-scan)  ASIMOV_FULL_SCAN=1 ;;
-        --no-cache)   ASIMOV_NO_CACHE=1 ;;
+        # Cache controls along two axes. --full-scan and --no-cache are kept as
+        # back-compat aliases: --full-scan = --no-read-cache; --no-cache = both.
+        --no-read-cache)  ASIMOV_NO_READ_CACHE=1 ;;
+        --no-write-cache) ASIMOV_NO_WRITE_CACHE=1 ;;
+        --full-scan)  ASIMOV_NO_READ_CACHE=1 ;;
+        --no-cache)   ASIMOV_NO_READ_CACHE=1; ASIMOV_NO_WRITE_CACHE=1 ;;
         --help)       print_usage; exit 0 ;;
         --version)    printf '%s\n' "$ASIMOV_VERSION"; exit 0 ;;
         -*)
@@ -81,16 +87,11 @@ readonly ASIMOV_DRY_RUN
 readonly ASIMOV_VERBOSE
 readonly ASIMOV_QUIET
 readonly ASIMOV_STATS
-readonly ASIMOV_FULL_SCAN
-readonly ASIMOV_NO_CACHE
+readonly ASIMOV_NO_READ_CACHE
+readonly ASIMOV_NO_WRITE_CACHE
 
 if [[ -n "$ASIMOV_QUIET" && -n "$ASIMOV_VERBOSE" ]]; then
     echo "asimov: --quiet and --verbose are mutually exclusive" >&2
-    exit 1
-fi
-
-if [[ -n "$ASIMOV_FULL_SCAN" && -n "$ASIMOV_NO_CACHE" ]]; then
-    echo "asimov: --full-scan and --no-cache are mutually exclusive" >&2
     exit 1
 fi
 
@@ -156,9 +157,12 @@ else
 fi
 readonly ASIMOV_SCAN_DIR
 
-# --full-scan clears persistent caches so everything is re-evaluated.
-if [[ -n "$ASIMOV_FULL_SCAN" ]]; then
-    rm -f "$ASIMOV_FAILED_STATE" "$ASIMOV_MDFIND_SEEN"
+# When ignoring cached reads but still writing (e.g. --full-scan / --no-read-cache),
+# clear the append-only state so the rebuilt cache reflects only this run's results.
+# When not writing (--no-cache / --no-write-cache), leave every cache file untouched.
+# (The paths cache is truncated separately by init_path_cache before the full scan.)
+if [[ -n "$ASIMOV_NO_READ_CACHE" && -z "$ASIMOV_NO_WRITE_CACHE" ]]; then
+    rm -f "$ASIMOV_EXCLUDED_STATE" "$ASIMOV_FAILED_STATE" "$ASIMOV_MDFIND_SEEN"
 fi
 
 # Build a cache of paths already excluded from Time Machine.
@@ -173,7 +177,9 @@ spotlight_count="$(wc -l < "$ASIMOV_EXCLUDED_CACHE" | tr -d ' ')"
 # Merge persistent excluded + failed state into the Spotlight cache.
 # Failed paths (e.g. Go modules with @ chars) are included so the bulk filter
 # skips them instantly instead of wasting time retrying tmutil.
-if [[ -f "$ASIMOV_EXCLUDED_STATE" ]] || [[ -f "$ASIMOV_FAILED_STATE" ]]; then
+# Skipped under --no-read-cache (--full-scan / --no-cache): every path is then
+# re-verified against the tmutil isexcluded ground truth instead.
+if [[ -z "$ASIMOV_NO_READ_CACHE" ]] && { [[ -f "$ASIMOV_EXCLUDED_STATE" ]] || [[ -f "$ASIMOV_FAILED_STATE" ]]; }; then
     {
         cat "$ASIMOV_EXCLUDED_CACHE"
         if [[ -f "$ASIMOV_EXCLUDED_STATE" ]]; then cat "$ASIMOV_EXCLUDED_STATE"; fi
@@ -268,16 +274,16 @@ read_path_cache() {
 }
 
 # Initialize the path cache file with a header, truncating any old contents.
-# No-op if --dry-run or --no-cache.
+# No-op if --dry-run or writes are disabled (--no-write-cache / --no-cache).
 init_path_cache() {
-    [[ -n "$ASIMOV_DRY_RUN" || -n "$ASIMOV_NO_CACHE" ]] && return 0
+    [[ -n "$ASIMOV_DRY_RUN" || -n "$ASIMOV_NO_WRITE_CACHE" ]] && return 0
     ensure_cache_dir
     printf '# asimov path cache — updated %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "$ASIMOV_PATH_CACHE"
 }
 
-# Append a single path to the cache file. No-op if --dry-run or --no-cache.
+# Append a single path to the cache file. No-op if --dry-run or writes are disabled (--no-write-cache / --no-cache).
 append_path_to_cache() {
-    [[ -n "$ASIMOV_DRY_RUN" || -n "$ASIMOV_NO_CACHE" ]] && return 0
+    [[ -n "$ASIMOV_DRY_RUN" || -n "$ASIMOV_NO_WRITE_CACHE" ]] && return 0
     printf '%s\n' "$1" >> "$ASIMOV_PATH_CACHE"
 }
 
@@ -298,9 +304,9 @@ dedup_nested_paths() {
 }
 
 # Sort, deduplicate, and prune stale entries from the cache file.
-# Writes atomically via temp file + mv. No-op if --dry-run or --no-cache.
+# Writes atomically via temp file + mv. No-op if --dry-run or writes are disabled (--no-write-cache / --no-cache).
 finalize_path_cache() {
-    [[ -n "$ASIMOV_DRY_RUN" || -n "$ASIMOV_NO_CACHE" ]] && return 0
+    [[ -n "$ASIMOV_DRY_RUN" || -n "$ASIMOV_NO_WRITE_CACHE" ]] && return 0
     [[ -f "$ASIMOV_PATH_CACHE" ]] || return 0
 
     ASIMOV_PATH_CACHE_TMP="${ASIMOV_PATH_CACHE}.tmp.$$"
@@ -514,7 +520,7 @@ discover_new_paths_via_mdfind() {
     # Persist all checked candidates so they're skipped on the next cached run.
     # Prevents re-checking 1000+ no-sentinel candidates every time.
     # No-op for dry-run/no-cache (no persistent state should be written).
-    if [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_CACHE" ]]; then
+    if [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_WRITE_CACHE" ]]; then
         ensure_cache_dir
         cat "$uncached_file" >> "$ASIMOV_MDFIND_SEEN"
     fi
@@ -723,15 +729,15 @@ exclude_paths_from_stdin() {
     # runs the read-only `tmutil isexcluded` guard, but prints "Would exclude" instead
     # of calling addexclusion and never persists state.
     verbose_timing "Excluding ${#to_exclude[@]} paths via tmutil…"
-    [[ -z "$ASIMOV_DRY_RUN" ]] && ensure_cache_dir
+    [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_WRITE_CACHE" ]] && ensure_cache_dir
     local tmutil_i=0 skipped_already=0
     for path in "${to_exclude[@]}"; do
         tmutil_i=$((tmutil_i + 1))
         # Ground-truth check: is this path actually already excluded?
         if tmutil isexcluded "$path" 2>/dev/null | grep -Fq '[Excluded]'; then
             skipped_already=$((skipped_already + 1))
-            # Persist so we skip it via the fast cache next time (not in dry-run)
-            [[ -z "$ASIMOV_DRY_RUN" ]] && printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
+            # Persist so we skip it via the fast cache next time (not in dry-run / no-write)
+            [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_WRITE_CACHE" ]] && printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
             if [[ -n "$ASIMOV_VERBOSE" ]]; then
                 echo "- ${path} is already excluded, skipping."
             fi
@@ -745,12 +751,12 @@ exclude_paths_from_stdin() {
         if ! tmutil addexclusion "${path}" 2>/dev/null; then
             echo "! ${path}: failed to exclude (tmutil error), skipping." >&2
             # Persist failure so we skip this path on subsequent runs.
-            # Common cause: Go module paths with @ characters. Use --full-scan to retry.
-            printf '%s\n' "$path" >> "$ASIMOV_FAILED_STATE"
+            # Common cause: Go module paths with @ characters. Use --no-read-cache to retry.
+            [[ -z "$ASIMOV_NO_WRITE_CACHE" ]] && printf '%s\n' "$path" >> "$ASIMOV_FAILED_STATE"
             continue
         fi
         # Persist immediately — survives Ctrl+C so the next run doesn't redo this path
-        printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
+        [[ -z "$ASIMOV_NO_WRITE_CACHE" ]] && printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
         record_excluded_path "$path" "${path} has been excluded from Time Machine backups"
         verbose_timing "  [${tmutil_i}/${#to_exclude[@]}] excluded in $((SECONDS - path_start))s: ${path}"
     done
@@ -899,9 +905,10 @@ if [[ ! -d "$ASIMOV_ROOT" ]]; then
 fi
 
 # Determine whether to use the cache or do a full scan.
-# Cache is used when: cache file exists, --full-scan is not set, --no-cache is not set.
+# Cache is read when the cache file exists and reads aren't disabled
+# (--no-read-cache / --full-scan / --no-cache force a full scan).
 use_cache=false
-if [[ -z "$ASIMOV_FULL_SCAN" && -z "$ASIMOV_NO_CACHE" && -f "$ASIMOV_PATH_CACHE" ]]; then
+if [[ -z "$ASIMOV_NO_READ_CACHE" && -f "$ASIMOV_PATH_CACHE" ]]; then
     use_cache=true
 fi
 
@@ -958,7 +965,7 @@ else
     # On interrupt, tee has already appended every path find emitted, so the
     # next run can use the partial cache.
     verbose_timing "Starting find traversal of ${ASIMOV_SCAN_DIR}…"
-    if [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_CACHE" ]]; then
+    if [[ -z "$ASIMOV_DRY_RUN" && -z "$ASIMOV_NO_WRITE_CACHE" ]]; then
         init_path_cache
         { find "${ASIMOV_SCAN_DIR}" \( "${find_parameters_skip[@]}" \) \( -false "${find_parameters_vendor[@]}" \) \
             || true; } | tee -a "$ASIMOV_PATH_CACHE" | exclude_paths_from_stdin

@@ -8,7 +8,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- `--no-read-cache` and `--no-write-cache` flags that control the cache on two independent axes. `--no-read-cache` ignores all cached state (re-discovers and re-verifies everything, then rebuilds the cache); `--no-write-cache` reads the cache but persists nothing. `--full-scan` is now an alias for `--no-read-cache`, and `--no-cache` an alias for both together — both kept for backwards compatibility
+
 ### Changed
+
+- `--full-scan` now re-evaluates **everything**: it ignores the `excluded` and `failed` state too (not just `paths`/`mdfind_seen`), so a path you manually un-excluded, or a previously failed path, is re-checked against the `tmutil isexcluded` ground truth. Previously it still trusted the `excluded` cache and skipped those paths
+- `--no-cache` now honors its documented contract — it reads **and** writes nothing. Previously it still read and wrote the `excluded`/`failed` state files
+- `--full-scan` and `--no-cache` are no longer mutually exclusive (combining them is well-defined: both reads and writes are skipped); the previous "mutually exclusive" error is removed
 
 ### Fixed
 

@@ -267,13 +267,65 @@ load test_helper
 }
 
 # =============================================================================
-# Mutual exclusivity
+# Cache read/write axis flags (--no-read-cache / --no-write-cache)
+# --full-scan and --no-cache are back-compat aliases.
 # =============================================================================
 
-@test "--full-scan and --no-cache together exits with error" {
+@test "--full-scan and --no-cache together is allowed (both resolve to no read + no write)" {
+  create_project "Code/My-Project" "package.json" "node_modules"
   run_asimov --full-scan --no-cache
-  [[ "$status" -eq 1 ]]
-  [[ "$output" == *"mutually exclusive"* ]]
+  [[ "$status" -eq 0 ]]
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
+  [[ "$output" == *"Scanning for dependency"* ]]
+  [[ ! -f "${HOME}/.cache/asimov/paths" ]]
+}
+
+@test "--full-scan is an alias for --no-read-cache (ignores cache, rebuilds it)" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_cached "${HOME}/Code/My-Project/node_modules"
+
+  run_asimov --no-read-cache
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Scanning for dependency"* ]]
+  [[ "$output" != *"Using cached paths"* ]]
+  # Rebuilds the cache (write still enabled)
+  assert_cached "${HOME}/Code/My-Project/node_modules"
+}
+
+@test "--no-write-cache reads the cache but does not update it" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  run_asimov
+  assert_cached "${HOME}/Code/My-Project/node_modules"
+  local original_cache
+  original_cache="$(cat "${HOME}/.cache/asimov/paths")"
+
+  # A new project discovered via Spotlight on the cached run
+  create_project "Code/New-Project" "Cargo.toml" "target"
+  ASIMOV_TEST_MDFIND_SENTINEL_RESULTS="${TEST_TEMP_DIR}/.mdfind_sentinel_results"
+  export ASIMOV_TEST_MDFIND_SENTINEL_RESULTS
+  echo "${HOME}/Code/New-Project/target" > "$ASIMOV_TEST_MDFIND_SENTINEL_RESULTS"
+
+  run_asimov --no-write-cache
+  [[ "$status" -eq 0 ]]
+  # Reads the cache (fast path), so it is NOT a full scan
+  [[ "$output" == *"Using cached paths"* ]]
+  # But persists nothing: the newly found project is not added to the cache
+  refute_cached "${HOME}/Code/New-Project/target"
+  [[ "$(cat "${HOME}/.cache/asimov/paths")" == "$original_cache" ]]
+}
+
+@test "--no-cache equals --no-read-cache + --no-write-cache" {
+  create_project "Code/My-Project" "package.json" "node_modules"
+  # Seed a cache so we can prove reads are ignored
+  run_asimov
+  assert_cached "${HOME}/Code/My-Project/node_modules"
+
+  run_asimov --no-read-cache --no-write-cache
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Scanning for dependency"* ]]   # reads ignored → full scan
+  [[ "$output" != *"Using cached paths"* ]]
+  assert_excluded "${HOME}/Code/My-Project/node_modules"
 }
 
 # =============================================================================
