@@ -713,30 +713,32 @@ exclude_paths_from_stdin() {
     }
     verbose_timing "${#to_exclude[@]} to exclude, ${already_excluded} already excluded"
 
-    if [[ -n "$ASIMOV_DRY_RUN" ]]; then
-        for path in "${to_exclude[@]}"; do
-            record_excluded_path "$path" "Would exclude: ${path}"
-        done
-        return 0
-    fi
-
     # Layer 3: tmutil isexcluded guard before the expensive addexclusion (~11s each).
     # This is the ground truth — catches paths the Spotlight cache missed (stale index,
-    # interrupted previous runs). v0.5.0 removed this check; re-adding it cut runtime
+    # interrupted previous runs, or exclusions added outside Asimov — e.g. a manually
+    # excluded parent like ~/.nvm). v0.5.0 removed this check; re-adding it cut runtime
     # from 73 min to 79s on a real system with ~460 dependency paths.
+    #
+    # --dry-run takes this exact same path so the preview matches a real run: it still
+    # runs the read-only `tmutil isexcluded` guard, but prints "Would exclude" instead
+    # of calling addexclusion and never persists state.
     verbose_timing "Excluding ${#to_exclude[@]} paths via tmutil…"
-    ensure_cache_dir
+    [[ -z "$ASIMOV_DRY_RUN" ]] && ensure_cache_dir
     local tmutil_i=0 skipped_already=0
     for path in "${to_exclude[@]}"; do
         tmutil_i=$((tmutil_i + 1))
         # Ground-truth check: is this path actually already excluded?
         if tmutil isexcluded "$path" 2>/dev/null | grep -Fq '[Excluded]'; then
             skipped_already=$((skipped_already + 1))
-            # Persist so we skip it via the fast cache next time
-            printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
+            # Persist so we skip it via the fast cache next time (not in dry-run)
+            [[ -z "$ASIMOV_DRY_RUN" ]] && printf '%s\n' "$path" >> "$ASIMOV_EXCLUDED_STATE"
             if [[ -n "$ASIMOV_VERBOSE" ]]; then
                 echo "- ${path} is already excluded, skipping."
             fi
+            continue
+        fi
+        if [[ -n "$ASIMOV_DRY_RUN" ]]; then
+            record_excluded_path "$path" "Would exclude: ${path}"
             continue
         fi
         local path_start=$SECONDS

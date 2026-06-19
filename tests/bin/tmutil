@@ -18,7 +18,22 @@ shift || true
 case "$subcommand" in
   isexcluded)
     path="${1:-}"
-    if grep -Fxq "$path" "$ASIMOV_TEST_EXCLUSIONS" 2>/dev/null; then
+    # A path is excluded if it — or any ancestor directory — is in the exclusion
+    # database. Real tmutil reports descendants of a path-based exclusion as
+    # excluded too (TM exclusions are recursive), so a manually excluded parent
+    # like ~/.nvm covers ~/.nvm/.../node_modules.
+    excluded=false
+    probe="$path"
+    while :; do
+      if grep -Fxq "$probe" "$ASIMOV_TEST_EXCLUSIONS" 2>/dev/null; then
+        excluded=true
+        break
+      fi
+      parent="$(dirname "$probe")"
+      [[ "$parent" == "$probe" ]] && break
+      probe="$parent"
+    done
+    if [[ "$excluded" == true ]]; then
       printf '[Excluded]\t%s\n' "$path"
     else
       printf '[Included]\t%s\n' "$path"

@@ -556,3 +556,39 @@ extra = .custom-deps *.x'; touch ${pwned}; '"
   [[ "$output" =~ totalling\ [0-9]+[KMG]\. ]]
   [[ "$(count_exclusions)" -eq 0 ]]
 }
+
+# Issue #19: --dry-run must run the same tmutil isexcluded ground-truth guard as
+# a real run, so its preview never claims it would exclude a path that Time
+# Machine already covers via an excluded ancestor (e.g. a manually excluded
+# ~/.nvm). Such exclusions are often path-based and NOT reported by Spotlight,
+# so the Layer-1 cache misses them and only the Layer-3 guard catches them.
+
+@test "dry-run does not list a dependency dir already covered by an excluded ancestor (issue #19)" {
+  create_project "Projects/app" "package.json" "node_modules"
+  # Manual Time Machine exclusion of the parent that Spotlight does not report.
+  echo "${HOME}/Projects/app" > "$ASIMOV_TEST_EXCLUSIONS"
+
+  run_asimov --dry-run
+  [[ "$status" -eq 0 ]]
+  [[ "$output" != *"Would exclude: ${HOME}/Projects/app/node_modules"* ]]
+  [[ "$output" == *"No directories would be excluded."* ]]
+}
+
+@test "dry-run lists a not-yet-excluded dependency dir without excluding it" {
+  create_project "Projects/app" "package.json" "node_modules"
+  run_asimov --dry-run
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *"Would exclude: ${HOME}/Projects/app/node_modules"* ]]
+  refute_excluded "${HOME}/Projects/app/node_modules"
+}
+
+@test "real run skips a dependency dir already covered by an excluded ancestor (dry-run parity)" {
+  create_project "Projects/app" "package.json" "node_modules"
+  echo "${HOME}/Projects/app" > "$ASIMOV_TEST_EXCLUSIONS"
+
+  run_asimov
+  [[ "$status" -eq 0 ]]
+  # Only the pre-existing parent exclusion remains; node_modules is not re-added.
+  [[ "$(count_exclusions)" -eq 1 ]]
+  refute_excluded "${HOME}/Projects/app/node_modules"
+}
