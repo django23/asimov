@@ -5,8 +5,8 @@
 # @author  Steve Grunwell
 # @license MIT
 
-# shellcheck disable=SC1090
-source "$(pwd -P)/$(dirname "$0")/vars"
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/vars"
 
 # Verify that Asimov is executable.
 chmod +x "${DIR}/asimov"

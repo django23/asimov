@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -Eeu -o pipefail
 
+# Restrict permissions on all files/dirs we create (mktemp temp files, cache dir).
+# Temp files contain the full home-directory layout, so keep them private (0600/0700).
+umask 077
+
 # Temp files for tracking excluded directory sizes and pre-existing exclusions.
 ASIMOV_SIZE_LOG="$(mktemp)"
 ASIMOV_EXCLUDED_CACHE="$(mktemp)"
@@ -318,6 +322,12 @@ finalize_path_cache() {
     if [[ -f "$ASIMOV_MDFIND_SEEN" ]]; then
         sort -u "$ASIMOV_MDFIND_SEEN" > "${ASIMOV_MDFIND_SEEN}.tmp"
         mv -f "${ASIMOV_MDFIND_SEEN}.tmp" "$ASIMOV_MDFIND_SEEN"
+    fi
+
+    # Dedup the failed-state file (grows with appends each run)
+    if [[ -f "$ASIMOV_FAILED_STATE" ]]; then
+        sort -u "$ASIMOV_FAILED_STATE" > "${ASIMOV_FAILED_STATE}.tmp"
+        mv -f "${ASIMOV_FAILED_STATE}.tmp" "$ASIMOV_FAILED_STATE"
     fi
 
     if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
@@ -787,7 +797,12 @@ build_find_vendor_params() {
         sentinel_name="${parts[1]}"
 
         if [[ "$sentinel_name" == *'*'* ]]; then
-            sentinel_check=( -execdir sh -c 'ls -d '"${sentinel_name}"' >/dev/null 2>&1' \; )
+            # Pass the glob pattern as a positional arg ($1), never interpolated into
+            # the sh -c script body, so a malicious sentinel can't inject shell commands.
+            # $1 is intentionally unquoted so the inner sh glob-expands the pattern; its
+            # value is never re-parsed as shell code, so injection is not possible.
+            # shellcheck disable=SC2016,SC2086
+            sentinel_check=( -execdir sh -c 'ls -d -- $1 >/dev/null 2>&1' _ "${sentinel_name}" \; )
         else
             sentinel_check=( -execdir test -e "${sentinel_name}" \; )
         fi
@@ -808,7 +823,13 @@ build_find_vendor_params() {
         sentinel_name="${parts[1]}"
 
         if [[ "$sentinel_name" == *'*'* ]]; then
-            sentinel_check=( -execdir sh -c 'ls -d '"${sentinel_name}"' >/dev/null 2>&1' \; )
+            # sentinel_name here comes from the user's config; pass it as a positional
+            # arg ($1) instead of interpolating it into the sh -c script body to
+            # prevent shell command injection from a crafted config value. $1 is
+            # intentionally unquoted so the inner sh glob-expands it; its value is never
+            # re-parsed as shell code, so a payload like "*.x'; cmd; '" can't execute.
+            # shellcheck disable=SC2016,SC2086
+            sentinel_check=( -execdir sh -c 'ls -d -- $1 >/dev/null 2>&1' _ "${sentinel_name}" \; )
         else
             sentinel_check=( -execdir test -e "${sentinel_name}" \; )
         fi
